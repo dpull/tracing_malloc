@@ -14,6 +14,9 @@ add_library(${PROJ_NAME} SHARED ${PROJ_SRC})
 target_link_libraries(${PROJ_NAME} dl)
 target_link_libraries(${PROJ_NAME} pthread)
 
+target_link_libraries(${PROJ_NAME} unwind-x86_64)
+target_link_libraries(${PROJ_NAME} unwind)
+
 message(STATUS *******************************************************)
 message(STATUS CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME})
 message(STATUS CMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION})

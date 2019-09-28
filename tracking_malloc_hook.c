@@ -28,8 +28,8 @@ static void* internal_malloc(size_t size)
 
 	size = (size + 7) / 8 * 8;
 
-	void* ptr = internal_malloc_buffer_pos;
-	void* ptr_end = ptr + size;
+	char* ptr = internal_malloc_buffer_pos;
+	char* ptr_end = ptr + size;
 
     if (ptr_end < internal_malloc_buffer_end) {
         internal_malloc_buffer_pos = ptr_end;
@@ -42,7 +42,7 @@ static void* internal_malloc(size_t size)
 
 static int is_internal_malloc(void* ptr)
 {
-    return ptr >= internal_malloc_buffer && ptr < internal_malloc_buffer_end;
+    return (char*)ptr >= internal_malloc_buffer && (char*)ptr < internal_malloc_buffer_end;
 }
 
 __attribute__((constructor))

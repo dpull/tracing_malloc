@@ -1,44 +1,15 @@
 #pragma once
-#include ""
-#include "tracking_malloc.h"
+#include "tracking_malloc.hpp"
 #include <map>
 #include <list>
 #include <thread>
 #include <mutex>
 #include <time.h>
 
-template<class T>
-class sys_allocator : public std::allocator<T> {
-public:
-	T* allocate(size_t n, void const*) 
-    {
-		return (T*)sys_malloc(n);
-	}
-
-	void deallocate(T* p, size_t n) 
-    {
-		sys_free(p);
-	}
-};
-
-template<class T>
-inline T* sys_new() 
-{
-	void* ptr = sys_malloc((sizeof(T)));
-	return new(ptr) T;
-}
-
-template<class T>
-inline void sys_delete(T* ptr) 
-{
-	ptr->~T();
-	sys_free(ptr);
-}
-
 struct alloc_info {
 	size_t alloc_size;
 	time_t alloc_time;
-    stacktrace* alloc_stacktrace;
+    struct stacktrace* alloc_stacktrace;
 };
 
 struct alloc_opt {

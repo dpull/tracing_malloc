@@ -1,5 +1,6 @@
-#include "tracking_malloc.h"
-#include "tracking_malloc.h"
+#include "tracking_malloc.hpp"
+#include "tracking_malloc_record.h"
+#include "tracking_malloc_stacktrace.h"
 #include <chrono>
 #include <sys/types.h>
 #include <unistd.h>
@@ -11,10 +12,10 @@ static record* g_record = nullptr;
 thread_local int record_disable_flag = 0;
 thread_local int record_thread_disable_flag = 0;
 
-void alloc_opt_destory(alloc_opt* opt)
+void alloc_info_destory(alloc_info* info)
 {
-    stacktrace_destroy(opt->alloc_stacktrace);
-    sys_delete(opt);
+    stacktrace_destroy(info->alloc_stacktrace);
+    sys_delete(info);
 }
 
 record::~record() 
@@ -59,14 +60,14 @@ int record::work_thread()
     output();
 
 	for (auto& it : m_alloc_info_table) 
-		alloc_opt_destory(it.second);
+		alloc_info_destory(it.second);
 
     m_alloc_opt_list.clear();
 	m_alloc_info_table.clear();
 	return 0;
 }
 
-void record::output(int check_time)
+void record::output()
 {
     char file_name[FILENAME_MAX];
     sprintf(file_name, "/tmp/%s.%d", "tracking.malloc", getpid());
@@ -75,12 +76,12 @@ void record::output(int check_time)
 
 	for (auto& it : m_alloc_info_table) {
         alloc_info* info = it.second;
-        fprintf(fp, "time:%d\tsize:%d\tptr:%p\n%s", info->alloc_time, info->alloc_size, it.first);
+        fprintf(stream, "time:%d\tsize:%d\tptr:%p\n%s", info->alloc_time, info->alloc_size, it.first);
         info->alloc_stacktrace->analysis();
         info->alloc_stacktrace->output(stream, 2);
 	}
 
-    fclose(fp);
+    fclose(stream);
 }
 
 int record::apply_alloc_opt_list(alloc_opt_list& opt_list)
@@ -94,7 +95,7 @@ int record::apply_alloc_opt_list(alloc_opt_list& opt_list)
 		case OPT_TYPE_FREE:
 			auto it = m_alloc_info_table.find(opt.ptr);
 			if (it != m_alloc_info_table.end()) {
-		        alloc_opt_destory(it.second);
+		        alloc_info_destory(it->second);
 				m_alloc_info_table.erase(it);
 			}
 			break;
