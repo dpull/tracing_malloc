@@ -76,7 +76,7 @@ void record::output()
 
 	for (auto& it : m_alloc_info_table) {
         alloc_info* info = it.second;
-        fprintf(stream, "time:%d\tsize:%d\tptr:%p\n%s", info->alloc_time, info->alloc_size, it.first);
+        fprintf(stream, "time:%d\tsize:%d\tptr:%p\n", info->alloc_time, info->alloc_size, it.first);
         info->alloc_stacktrace->analysis();
         info->alloc_stacktrace->output(stream, 2);
 	}

@@ -1,15 +1,11 @@
 #pragma once
 #include <stdio.h>
 
-#define USE_BACKTRACE
-#define USE_BOOST_STACKTRACE
-#define USE_LIBUNWIND
-
 struct stacktrace {
-    virtual ~stacktrace();
-    virtual void collect();
-    virtual void analysis();
-    virtual void output(FILE* stream, int start_level);
+    virtual ~stacktrace() {};
+    virtual void collect() = 0;
+    virtual void analysis() = 0;
+    virtual void output(FILE* stream, int start_level) = 0;
 };
 
 stacktrace* stacktrace_create();
