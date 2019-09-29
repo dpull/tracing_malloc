@@ -6,18 +6,16 @@
 #include <vector>
 #include <chrono>
 
-#ifdef USE_BACKTRACE
+#ifdef ENABLE_BACKTRACE
 #include <execinfo.h>
 class stacktrace_backtrace : public stacktrace {
 public:
     ~stacktrace_backtrace() override
     {
-        if (strings) {
+        if (strings) 
             free(strings);
-            strings = nullptr;
-        }
     }
-    void collect() override 
+    void collect() override
     {
         size = backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]));
     }
@@ -38,62 +36,44 @@ public:
     int size = 0;
     char** strings = nullptr;
 };
-#endif 
+#endif // ENABLE_BACKTRACE
 
-#ifdef USE_BOOST_STACKTRACE
+#ifdef ENABLE_BOOST_STACKTRACE
 #include <boost/stacktrace.hpp>
 class stacktrace_boost_stacktrace : public stacktrace {
 public:
-    void collect() override 
+    ~stacktrace_boost_stacktrace() override
     {
-        std::stringstream str;
-        str << boost::stacktrace::stacktrace();
-        stacktrace = str.str();
+        if (stacktrace)
+            sys_delete(stacktrace);
+    }
+    void collect() override
+    {
+        stacktrace = sys_new<boost::stacktrace::stacktrace>();
     }
     void analysis() override
     {
+        if (!stacktrace)
+            return;
 
+        std::stringstream str;
+        str << *stacktrace;
+        stacktrace_str = str.str();
+
+        sys_delete(stacktrace);
+        stacktrace = nullptr;
     }
     void output(FILE* stream, int start_level) override
     {
         start_level;
-        fprintf(stream, "stacktrace_backtrace\n%s\n", stacktrace.c_str());
+        fprintf(stream, "stacktrace_boost_stacktrace_step\n%s\n", stacktrace_str.c_str());
     }
-    std::string stacktrace;
+    boost::stacktrace::stacktrace* stacktrace = nullptr;
+    std::string stacktrace_str;
 };
-class stacktrace_boost_stacktrace_step : public stacktrace {
-public:
-    void collect() override 
-    {
-        stacktrace = boost::stacktrace::stacktrace();
-    }
-    void analysis() override
-    {
-        if (!stacktrace_levels.empty())
-            return;
+#endif // ENABLE_BOOST_STACKTRACE
 
-        stacktrace_levels.reserve(STACK_TRACE_DEPTH);
-        for (auto& frame: stacktrace) {
-            stacktrace_levels.push_back(std::make_pair(frame.address(), frame.source_file()));
-            if (stacktrace_levels.size() == STACK_TRACE_DEPTH)
-                break;
-        }
-    }
-    void output(FILE* stream, int start_level) override
-    {
-        auto size = stacktrace_levels.size();
-        fprintf(stream, "stacktrace_boost_stacktrace_step:%d\n", size - start_level);
-        for (auto i = start_level; i < size; ++i) {
-            auto& frame = stacktrace_levels.at(i);
-            fprintf(stream, "%p(%s)\n", frame.first, frame.second.c_str());
-        }
-    }
-    boost::stacktrace::stacktrace stacktrace;
-    std::vector<std::pair<const void*, std::string>> stacktrace_levels;
-};
-#endif 
-
-#ifdef USE_LIBUNWIND
+#ifdef ENABLE_LIBUNWIND
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 #include <cxxabi.h>
@@ -105,9 +85,9 @@ class stacktrace_libunwind : public stacktrace {
     };
 
 public:
-    void collect() override 
+    void collect() override
     {
-        unw_cursor_t cursor; 
+        unw_cursor_t cursor;
         unw_context_t uc;
         unw_getcontext(&uc);
         unw_init_local(&cursor, &uc);
@@ -123,7 +103,7 @@ public:
             int status = unw_get_proc_name(&cursor, frame->symbol, sizeof(frame->symbol), &frame->offset);
             if (status == 0) {
                 char* demangled = abi::__cxa_demangle(frame->symbol, nullptr, nullptr, &status);
-                if (status == 0) 
+                if (status == 0)
                     strncpy(frame->symbol, demangled, sizeof(frame->symbol));
             }
             stacktrace_len++;
@@ -131,7 +111,7 @@ public:
     }
     void analysis() override
     {
-        
+
     }
     void output(FILE* stream, int start_level) override
     {
@@ -142,92 +122,112 @@ public:
         }
     }
     stack_frame stacktrace[STACK_TRACE_DEPTH];
-	int stacktrace_len;
+    int stacktrace_len;
 };
-#endif 
+#endif // ENABLE_LIBUNWIND
 
-class stacktrace_compare : public stacktrace {
-    struct node {
-        stacktrace* st;
-        std::string name;
-        std::chrono::microseconds collect_cost_time;
-        std::chrono::microseconds analysis_cost_time;
-    };
+#ifdef USE_STACKTRACE_COMPARISON
+#include <atomic>
 
+enum comparison_type {
+    comparison_type_backtrace,
+    comparison_type_boost_stacktrace,
+    comparison_type_boost_libunwind,
+    comparison_type_total,
+};
+static std::atomic<long long> collect_cost[comparison_type_total];
+static std::atomic<long long> analysis_cost[comparison_type_total];
+
+class stacktrace_comparison : public stacktrace {
 public:
-    stacktrace_compare() 
+    stacktrace_comparison()
     {
-        node tmp;
-#ifdef USE_BACKTRACE
-        tmp.st = sys_new<stacktrace_backtrace>();
-        tmp.name = "stacktrace_backtrace";
-        nodes.push_back(tmp);
-#endif 
+        memset(stacktrace_array, 0, sizeof(stacktrace_array));
 
-#ifdef USE_BOOST_STACKTRACE
-        tmp.st = sys_new<stacktrace_boost_stacktrace>() ;
-        tmp.name = "stacktrace_boost_stacktrace";
-        nodes.push_back(tmp);
+#ifdef ENABLE_BACKTRACE
+        stacktrace_array[comparison_type_backtrace] = sys_new<stacktrace_backtrace>();
+#endif // ENABLE_BACKTRACE
 
-        tmp.st = sys_new<stacktrace_boost_stacktrace_step>();
-        tmp.name = "stacktrace_boost_stacktrace_step";
-        nodes.push_back(tmp);
-#endif 
+#ifdef ENABLE_BOOST_STACKTRACE
+        stacktrace_array[comparison_type_boost_stacktrace] = sys_new<stacktrace_boost_stacktrace>();
+#endif // ENABLE_BOOST_STACKTRACE
 
-#ifdef USE_LIBUNWIND
-        tmp.st = sys_new<stacktrace_libunwind>();
-        tmp.name = "stacktrace_libunwind";
-        nodes.push_back(tmp);
-#endif        
+#ifdef ENABLE_LIBUNWIND
+        stacktrace_array[comparison_type_boost_libunwind] = sys_new<stacktrace_libunwind>();
+#endif // ENABLE_LIBUNWIND      
     }
 
-    ~stacktrace_compare() override
+    ~stacktrace_comparison() override
     {
-        for(auto& node : nodes)  {
-            printf("%s\tcollect:[%lld]\tanalysis:[%lld]\n", node.name.c_str(), node.collect_cost_time.count(), node.analysis_cost_time.count());
-            sys_delete(node.st);
+         for (auto i = 0; i < comparison_type_total; ++i) {
+            auto st = stacktrace_array[i];
+            if (st)
+                sys_delete(st);
         }
-        nodes.clear();
     }
 
-    void collect() override 
+    void collect() override
     {
-        for(auto& node : nodes)  {
+        for (auto i = 0; i < comparison_type_total; ++i) {
+            auto st = stacktrace_array[i];
+            if (!st)
+                continue;
             auto start = std::chrono::system_clock::now();
-            node.st->collect();
+            st->collect();
             auto end = std::chrono::system_clock::now();
-            node.collect_cost_time += std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+            auto cost_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            collect_cost[i].fetch_add(cost_time.count());
         }
     }
     void analysis() override
     {
-        for(auto& node : nodes) {
+        for (auto i = 0; i < comparison_type_total; ++i) {
+            auto st = stacktrace_array[i];
+            if (!st)
+                continue;
             auto start = std::chrono::system_clock::now();
-            node.st->analysis();
+            st->analysis();
             auto end = std::chrono::system_clock::now();
-            node.analysis_cost_time += std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+            auto cost_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            analysis_cost[i].fetch_add(cost_time.count());
         }
     }
     void output(FILE* stream, int start_level) override
     {
-        for(auto& node : nodes) {
-            node.st->output(stream, start_level);
+        start_level++;
+        for (auto i = 0; i < comparison_type_total; ++i) {
+            auto st = stacktrace_array[i];
+            if (!st)
+                continue;
+            st->output(stream, start_level);
         }
     }
-
-    std::vector<node> nodes;
+    stacktrace* stacktrace_array[comparison_type_total];
 };
+#endif // USE_STACKTRACE_COMPARISON
 
-stacktrace* stacktrace_create() 
+stacktrace* stacktrace_create()
 {
-#ifdef USE_STACKTRACE_COMPARE
-    return sys_new<stacktrace_compare>();
+#ifdef USE_STACKTRACE_COMPARISON
+    return sys_new<stacktrace_comparison>();
 #else
     return sys_new<stacktrace_backtrace>();
 #endif
 }
 
-void stacktrace_destroy(stacktrace* st) 
+void stacktrace_destroy(stacktrace* st)
 {
     sys_delete(st);
+}
+
+void stacktrace_uninit() 
+{
+#ifdef USE_STACKTRACE_COMPARISON
+    const char* format = "%-32s\tcollect_cost:[%lld]ms\tanalysis_cost:[%lld]ms\n";
+    printf(format, "backtrace", collect_cost[comparison_type_backtrace].load(), analysis_cost[comparison_type_backtrace].load());
+    printf(format, "boost_stacktrace,", collect_cost[comparison_type_boost_stacktrace].load(), analysis_cost[comparison_type_boost_stacktrace].load());
+    printf(format, "libunwind", collect_cost[comparison_type_boost_libunwind].load(), analysis_cost[comparison_type_boost_libunwind].load());
+#endif
 }

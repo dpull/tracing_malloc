@@ -7,12 +7,12 @@ extern "C" {
 #endif
 
 
-#ifdef USE_STACKTRACE_COMPARE
-    #define USE_BACKTRACE
-    #define USE_BOOST_STACKTRACE
-    #define USE_LIBUNWIND
+#ifdef USE_STACKTRACE_COMPARISON
+    #define ENABLE_BACKTRACE
+    #define ENABLE_BOOST_STACKTRACE
+    #define ENABLE_LIBUNWIND
 #else
-    #define USE_BACKTRACE
+    #define ENABLE_BACKTRACE
 #endif
 
 #define INTERNAL_MALLOC_BUFFER_SIZE  (1024*1024)

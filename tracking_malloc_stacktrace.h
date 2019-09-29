@@ -10,3 +10,4 @@ struct stacktrace {
 
 stacktrace* stacktrace_create();
 void stacktrace_destroy(stacktrace* st);
+void stacktrace_uninit();
