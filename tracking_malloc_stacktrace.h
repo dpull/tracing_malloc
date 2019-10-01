@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 struct stacktrace {
-    virtual ~stacktrace() {};
+    virtual ~stacktrace() {}
     virtual void collect() = 0;
     virtual void analysis() = 0;
     virtual void output(FILE* stream, int start_level) = 0;
@@ -10,4 +10,5 @@ struct stacktrace {
 
 stacktrace* stacktrace_create();
 void stacktrace_destroy(stacktrace* st);
-void stacktrace_uninit();
+
+void stacktrace_comparison_output();

@@ -6,15 +6,6 @@
 extern "C" {
 #endif
 
-
-#ifdef USE_STACKTRACE_COMPARISON
-    #define ENABLE_BACKTRACE
-    #define ENABLE_BOOST_STACKTRACE
-    #define ENABLE_LIBUNWIND
-#else
-    #define ENABLE_BACKTRACE
-#endif
-
 #define INTERNAL_MALLOC_BUFFER_SIZE  (1024*1024)
 #define STACK_TRACE_DEPTH            (32)
 

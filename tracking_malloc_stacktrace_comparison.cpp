@@ -1,10 +1,11 @@
-#include "tracking_malloc_stacktrace.h"
+#include "tracking_malloc_stacktrace_comparison.h"
+#include "tracking_malloc_stacktrace_default.h"
 #include "tracking_malloc.hpp"
 #include <string.h>
 #include <string>
 #include <sstream>
-#include <vector>
 #include <chrono>
+#include <atomic>
 
 #ifdef ENABLE_BACKTRACE
 #include <execinfo.h>
@@ -83,7 +84,6 @@ class stacktrace_libunwind : public stacktrace {
         char symbol[1024];
         unw_word_t offset;
     };
-
 public:
     void collect() override
     {
@@ -105,6 +105,8 @@ public:
                 char* demangled = abi::__cxa_demangle(frame->symbol, nullptr, nullptr, &status);
                 if (status == 0)
                     strncpy(frame->symbol, demangled, sizeof(frame->symbol));
+                if (demangled)
+                    free(demangled);
             }
             stacktrace_len++;
         }
@@ -127,107 +129,87 @@ public:
 #endif // ENABLE_LIBUNWIND
 
 #ifdef USE_STACKTRACE_COMPARISON
-#include <atomic>
-
-enum comparison_type {
-    comparison_type_backtrace,
-    comparison_type_boost_stacktrace,
-    comparison_type_boost_libunwind,
-    comparison_type_total,
-};
 static std::atomic<long long> collect_cost[comparison_type_total];
 static std::atomic<long long> analysis_cost[comparison_type_total];
 
-class stacktrace_comparison : public stacktrace {
-public:
-    stacktrace_comparison()
-    {
-        memset(stacktrace_array, 0, sizeof(stacktrace_array));
+stacktrace_comparison::stacktrace_comparison()
+{
+    memset(stacktrace_array, 0, sizeof(stacktrace_array));
+    stacktrace_array[comparison_type_default] = sys_new<stacktrace_default>();
 
 #ifdef ENABLE_BACKTRACE
-        stacktrace_array[comparison_type_backtrace] = sys_new<stacktrace_backtrace>();
+    stacktrace_array[comparison_type_backtrace] = sys_new<stacktrace_backtrace>();
 #endif // ENABLE_BACKTRACE
 
 #ifdef ENABLE_BOOST_STACKTRACE
-        stacktrace_array[comparison_type_boost_stacktrace] = sys_new<stacktrace_boost_stacktrace>();
+    stacktrace_array[comparison_type_boost_stacktrace] = sys_new<stacktrace_boost_stacktrace>();
 #endif // ENABLE_BOOST_STACKTRACE
 
 #ifdef ENABLE_LIBUNWIND
-        stacktrace_array[comparison_type_boost_libunwind] = sys_new<stacktrace_libunwind>();
+    stacktrace_array[comparison_type_boost_libunwind] = sys_new<stacktrace_libunwind>();
 #endif // ENABLE_LIBUNWIND      
-    }
+}
 
-    ~stacktrace_comparison() override
-    {
-         for (auto i = 0; i < comparison_type_total; ++i) {
-            auto st = stacktrace_array[i];
-            if (st)
-                sys_delete(st);
-        }
+stacktrace_comparison::~stacktrace_comparison()
+{
+    for (auto i = 0; i < comparison_type_total; ++i) {
+        auto st = stacktrace_array[i];
+        if (st)
+            sys_delete(st);
     }
+}
 
-    void collect() override
-    {
-        for (auto i = 0; i < comparison_type_total; ++i) {
-            auto st = stacktrace_array[i];
-            if (!st)
-                continue;
-            auto start = std::chrono::system_clock::now();
-            st->collect();
-            auto end = std::chrono::system_clock::now();
+void stacktrace_comparison::collect() 
+{
+    for (auto i = 0; i < comparison_type_total; ++i) {
+        auto st = stacktrace_array[i];
+        if (!st)
+            continue;
+        auto start = std::chrono::system_clock::now();
+        st->collect();
+        auto end = std::chrono::system_clock::now();
 
-            auto cost_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-            collect_cost[i].fetch_add(cost_time.count());
-        }
+        auto cost_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        collect_cost[i].fetch_add(cost_time.count());
     }
-    void analysis() override
-    {
-        for (auto i = 0; i < comparison_type_total; ++i) {
-            auto st = stacktrace_array[i];
-            if (!st)
-                continue;
-            auto start = std::chrono::system_clock::now();
-            st->analysis();
-            auto end = std::chrono::system_clock::now();
+}
 
-            auto cost_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-            analysis_cost[i].fetch_add(cost_time.count());
-        }
+void stacktrace_comparison::analysis()
+{
+    for (auto i = 0; i < comparison_type_total; ++i) {
+        auto st = stacktrace_array[i];
+        if (!st)
+            continue;
+        auto start = std::chrono::system_clock::now();
+        st->analysis();
+        auto end = std::chrono::system_clock::now();
+
+        auto cost_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        analysis_cost[i].fetch_add(cost_time.count());
     }
-    void output(FILE* stream, int start_level) override
-    {
-        start_level++;
-        for (auto i = 0; i < comparison_type_total; ++i) {
-            auto st = stacktrace_array[i];
-            if (!st)
-                continue;
-            st->output(stream, start_level);
-        }
+}
+
+void stacktrace_comparison::output(FILE* stream, int start_level)
+{
+    start_level++;
+    for (auto i = 0; i < comparison_type_total; ++i) {
+        auto st = stacktrace_array[i];
+        if (!st)
+            continue;
+        st->output(stream, start_level);
     }
-    stacktrace* stacktrace_array[comparison_type_total];
-};
+}
+
 #endif // USE_STACKTRACE_COMPARISON
 
-stacktrace* stacktrace_create()
-{
-#ifdef USE_STACKTRACE_COMPARISON
-    return sys_new<stacktrace_comparison>();
-#else
-    return sys_new<stacktrace_backtrace>();
-#endif
-}
-
-void stacktrace_destroy(stacktrace* st)
-{
-    sys_delete(st);
-}
-
-void stacktrace_uninit() 
+void stacktrace_comparison_output() 
 {
 #ifdef USE_STACKTRACE_COMPARISON
     const char* format = "%-32s\tcollect_cost:[%lld]ms\tanalysis_cost:[%lld]ms\n";
+    printf(format, "default", collect_cost[comparison_type_default].load(), analysis_cost[comparison_type_default].load());
     printf(format, "backtrace", collect_cost[comparison_type_backtrace].load(), analysis_cost[comparison_type_backtrace].load());
     printf(format, "boost_stacktrace,", collect_cost[comparison_type_boost_stacktrace].load(), analysis_cost[comparison_type_boost_stacktrace].load());
     printf(format, "libunwind", collect_cost[comparison_type_boost_libunwind].load(), analysis_cost[comparison_type_boost_libunwind].load());
 #endif
 }
+

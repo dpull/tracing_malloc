@@ -24,7 +24,7 @@ def load_file(file_path):
 def save_file(file_path, data):
     file = open(file_path, 'w')
     for item in data:
-        file.write('time:{0}\tsize:{1}\n'.format(item['time'], item['size']))
+        file.write('time:{0}\tsize:{1}\tptr:{2}\n'.format(item['time'], item['size'], item['ptr']))
         for frame in item['stack_line']:
             file.write('{0}'.format(frame))
         file.write('========\n\n')
