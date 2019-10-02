@@ -9,6 +9,7 @@
 struct alloc_info {
     size_t alloc_size;
     time_t alloc_time;
+    int alloc_stacktrace_analysed;
     struct stacktrace* alloc_stacktrace;
 };
 
@@ -24,12 +25,12 @@ typedef std::list<alloc_opt, sys_allocator<alloc_opt>> alloc_opt_list;
 class record {
 public:
     ~record();
-    int init();
-    int add_alloc(void* ptr, size_t size);
-    int add_free(void* ptr);
+    bool init();
+    bool add_alloc(void* ptr, size_t size);
+    bool add_free(void* ptr);
 
 private:
-    int apply_alloc_opt_list(alloc_opt_list& opt_list);
+    void apply_alloc_opt_list(alloc_opt_list& opt_list);
     void output();
     int work_thread();
 

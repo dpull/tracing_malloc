@@ -27,12 +27,12 @@ record::~record()
     m_thread.join();
 }
 
-int record::init()
+bool record::init()
 {
     m_exit_flag = false;
     next_save_time = 0;
     m_thread = std::thread(&record::work_thread, this);
-    return 0;
+    return true;
 }
 
 int record::work_thread()
@@ -48,7 +48,6 @@ int record::work_thread()
         }
 
         apply_alloc_opt_list(swap_list);
-        swap_list.clear();
 
         now = time(NULL);
         if (now > next_save_time) {
@@ -60,10 +59,8 @@ int record::work_thread()
     }
 
     apply_alloc_opt_list(m_alloc_opt_list);
-    m_alloc_opt_list.clear();
 
     output();
-    stacktrace_uninit();
 
     for (auto& it : m_alloc_info_table)
         alloc_info_destory(it.second);
@@ -82,15 +79,22 @@ void record::output()
     for (auto& it : m_alloc_info_table) {
         alloc_info* info = it.second;
         fprintf(stream, "time:%d\tsize:%d\tptr:%p\n", info->alloc_time, info->alloc_size, it.first);
-        info->alloc_stacktrace->analysis();
-        info->alloc_stacktrace->output(stream, IGNORE_STACK_LEVEL);
+        if (!info->alloc_stacktrace_analysed) {
+            stacktrace_analysis(info->alloc_stacktrace, nullptr);
+            info->alloc_stacktrace_analysed = true;
+        }
+
+        for (int i = 0; i < info->alloc_stacktrace->count; ++i) {
+            stacktrace_frame* frame = info->alloc_stacktrace->frames + i;
+            fprintf(stream, "%p\t%p\t%s\n", frame->address, frame->fbase, frame->fname);
+        }
         fprintf(stream, "========\n\n");
     }
 
     fclose(stream);
 }
 
-int record::apply_alloc_opt_list(alloc_opt_list& opt_list)
+void record::apply_alloc_opt_list(alloc_opt_list& opt_list)
 {
     for (auto& opt : opt_list) {
         switch (opt.opt_type) {
@@ -107,26 +111,30 @@ int record::apply_alloc_opt_list(alloc_opt_list& opt_list)
             break;
         }
     }
-    return 0;
+    opt_list.clear();
 }
 
-int record::add_alloc(void* ptr, size_t size)
+bool record::add_alloc(void* ptr, size_t size)
 {
+    auto alloc_stacktrace = stacktrace_create(STACK_TRACE_SKIP, STACK_TRACE_DEPTH);
+    if (!alloc_stacktrace)
+        return false;
+
     alloc_opt opt;
     opt.opt_type = OPT_TYPE_ALLOC;
     opt.ptr = ptr;
     opt.info = sys_new<alloc_info>();
     opt.info->alloc_size = size;
     opt.info->alloc_time = time(NULL);
-    opt.info->alloc_stacktrace = stacktrace_create();
-    opt.info->alloc_stacktrace->collect();
+    opt.info->alloc_stacktrace_analysed = false;
+    opt.info->alloc_stacktrace = alloc_stacktrace;
 
     std::lock_guard<decltype(m_mutex)> lock(m_mutex);
     m_alloc_opt_list.push_back(opt);
-    return 1;
+    return true;
 }
 
-int record::add_free(void* ptr)
+bool record::add_free(void* ptr)
 {
     alloc_opt opt;
     opt.opt_type = OPT_TYPE_FREE;
@@ -135,7 +143,7 @@ int record::add_free(void* ptr)
 
     std::lock_guard<decltype(m_mutex)> lock(m_mutex);
     m_alloc_opt_list.push_back(opt);
-    return 1;
+    return true;
 }
 
 extern "C" int record_init()

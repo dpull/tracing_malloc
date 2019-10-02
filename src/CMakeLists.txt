@@ -8,22 +8,11 @@ set(CMAKE_C_STANDARD 11)
 set(PROJ_NAME "tracking_malloc")
 project(${PROJ_NAME})
 
-# set(USE_STACKTRACE_COMPARISON true)
-
-if(USE_STACKTRACE_COMPARISON)
-    add_definitions(-DUSE_STACKTRACE_COMPARISON) 
-endif(USE_STACKTRACE_COMPARISON)
-
 aux_source_directory(. PROJ_SRC)
 
 add_library(${PROJ_NAME} SHARED ${PROJ_SRC})
 target_link_libraries(${PROJ_NAME} dl)
 target_link_libraries(${PROJ_NAME} pthread)
-
-if(USE_STACKTRACE_COMPARISON)
-    target_link_libraries(${PROJ_NAME} unwind-x86_64)
-    target_link_libraries(${PROJ_NAME} unwind)
-endif(USE_STACKTRACE_COMPARISON)
 
 message(STATUS *******************************************************)
 message(STATUS CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME})
