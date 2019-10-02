@@ -72,7 +72,7 @@ int tracking_malloc_record::work_thread()
 void tracking_malloc_record::output(const char* suffix)
 {
     char file_name[FILENAME_MAX];
-    sprintf(file_name, "/tmp/%s.%s.%d", "tracking.malloc", suffix, getpid());
+    sprintf(file_name, "/tmp/%s.%d.%s", "tracking.malloc", suffix, getpid());
 
     FILE* stream = fopen(file_name, "w");
 
