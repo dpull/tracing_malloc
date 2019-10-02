@@ -1,7 +1,7 @@
 #pragma once
 #include "tracking_malloc.hpp"
 #include <map>
-#include <list>
+#include <vector>
 #include <thread>
 #include <mutex>
 #include <time.h>
@@ -20,7 +20,7 @@ struct tracking_malloc_alloc_opt {
 };
 
 typedef std::map<void*, tracking_malloc_alloc_info*, std::less<void*>, sys_allocator<std::pair<void*, tracking_malloc_alloc_info*> > > tracking_malloc_alloc_info_table;
-typedef std::list<tracking_malloc_alloc_opt, sys_allocator<tracking_malloc_alloc_opt>> tracking_malloc_alloc_opt_list;
+typedef std::vector<tracking_malloc_alloc_opt, sys_allocator<tracking_malloc_alloc_opt>> tracking_malloc_alloc_opt_queue;
 
 class tracking_malloc_record {
 public:
@@ -30,12 +30,12 @@ public:
     bool add_free(void* ptr);
 
 private:
-    void apply_tracking_malloc_alloc_opt_list(tracking_malloc_alloc_opt_list& opt_list);
+    void apply_alloc_opt_queue(tracking_malloc_alloc_opt_queue& opt_queue);
     void output(const char* suffix);
     int work_thread();
 
     tracking_malloc_alloc_info_table m_alloc_info_table;
-    tracking_malloc_alloc_opt_list m_alloc_opt_list;
+    tracking_malloc_alloc_opt_queue m_alloc_opt_queue;
     std::recursive_mutex m_mutex;
     std::thread m_thread;
     int m_exit_flag;

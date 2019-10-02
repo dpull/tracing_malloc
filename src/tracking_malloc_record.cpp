@@ -8,8 +8,6 @@
 
 #define OPT_TYPE_ALLOC      (1)
 #define OPT_TYPE_FREE       (2)
-#define OPT_TYPE_FREE       (2)
-#define IGNORE_STACK_LEVEL  (3)
 
 static tracking_malloc_record* g_record = nullptr;
 thread_local int record_disable_flag = 0;
@@ -31,6 +29,7 @@ bool tracking_malloc_record::init()
 {
     m_exit_flag = false;
     next_save_time = time(NULL);
+    m_alloc_opt_queue.reserve(STACK_RECORD_OPT_QUEUE_RESERVE);
     m_thread = std::thread(&tracking_malloc_record::work_thread, this);
     return true;
 }
@@ -38,16 +37,17 @@ bool tracking_malloc_record::init()
 int tracking_malloc_record::work_thread()
 {
     time_t now;
-    tracking_malloc_alloc_opt_list swap_list;
+    decltype(m_alloc_opt_queue) swap_queue;
+    swap_queue.reserve(m_alloc_opt_queue.capacity());
 
     record_thread_disable_flag = 1;
     while (!m_exit_flag) {
         {
             std::lock_guard<decltype(m_mutex)> lock(m_mutex);
-            swap_list.swap(m_alloc_opt_list);
+            swap_queue.swap(m_alloc_opt_queue);
         }
 
-        apply_tracking_malloc_alloc_opt_list(swap_list);
+        apply_alloc_opt_queue(swap_queue);
 
         now = time(NULL);
         if (now > next_save_time) {
@@ -58,14 +58,14 @@ int tracking_malloc_record::work_thread()
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
-    apply_tracking_malloc_alloc_opt_list(m_alloc_opt_list);
+    apply_alloc_opt_queue(m_alloc_opt_queue);
 
     output("exit");
 
     for (auto& it : m_alloc_info_table)
         tracking_malloc_alloc_info_destory(it.second);
 
-    assert(m_alloc_opt_list.empty());
+    assert(m_alloc_opt_queue.empty());
     return 0;
 }
 
@@ -94,9 +94,9 @@ void tracking_malloc_record::output(const char* suffix)
     fclose(stream);
 }
 
-void tracking_malloc_record::apply_tracking_malloc_alloc_opt_list(tracking_malloc_alloc_opt_list& opt_list)
+void tracking_malloc_record::apply_alloc_opt_queue(tracking_malloc_alloc_opt_queue& opt_queue)
 {
-    for (auto& opt : opt_list) {
+    for (auto& opt : opt_queue) {
         switch (opt.opt_type) {
         case OPT_TYPE_ALLOC:
             m_alloc_info_table.insert(std::make_pair(opt.ptr, opt.info));
@@ -111,7 +111,7 @@ void tracking_malloc_record::apply_tracking_malloc_alloc_opt_list(tracking_mallo
             break;
         }
     }
-    opt_list.clear();
+    opt_queue.clear();
 }
 
 bool tracking_malloc_record::add_alloc(void* ptr, size_t size)
@@ -130,7 +130,7 @@ bool tracking_malloc_record::add_alloc(void* ptr, size_t size)
     opt.info->alloc_stacktrace = alloc_stacktrace;
 
     std::lock_guard<decltype(m_mutex)> lock(m_mutex);
-    m_alloc_opt_list.push_back(opt);
+    m_alloc_opt_queue.push_back(opt);
     return true;
 }
 
@@ -142,7 +142,7 @@ bool tracking_malloc_record::add_free(void* ptr)
     opt.info = nullptr;
 
     std::lock_guard<decltype(m_mutex)> lock(m_mutex);
-    m_alloc_opt_list.push_back(opt);
+    m_alloc_opt_queue.push_back(opt);
     return true;
 }
 
