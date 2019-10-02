@@ -1,6 +1,3 @@
-#define _GNU_SOURCE
-#include <dlfcn.h>
-
 #include "tracking_malloc.h"
 #include <stdlib.h>
 #include <string.h>

@@ -1,5 +1,3 @@
-#define _GNU_SOURCE
-#include <dlfcn.h>
 #include "tracking_malloc_stacktrace.h"
 #include "tracking_malloc.h"
 #include <execinfo.h>

@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <dlfcn.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
@@ -8,8 +12,7 @@ extern "C" {
 
 #define INTERNAL_MALLOC_BUFFER_SIZE  (1024*1024)
 #define STACK_TRACE_DEPTH            (32)
-#define STACK_TRACE_SKIP             (2)
-
+#define STACK_TRACE_SKIP             (3)
 
 void* sys_malloc(size_t size);
 void sys_free(void* ptr);
