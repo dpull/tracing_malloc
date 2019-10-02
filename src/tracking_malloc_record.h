@@ -1,10 +1,11 @@
 #pragma once
 #include "tracking_malloc.hpp"
+#include <time.h>
 #include <map>
 #include <vector>
 #include <thread>
 #include <mutex>
-#include <time.h>
+#include <string>
 
 struct tracking_malloc_alloc_info {
     size_t alloc_size;
@@ -21,6 +22,8 @@ struct tracking_malloc_alloc_opt {
 
 typedef std::map<void*, tracking_malloc_alloc_info*, std::less<void*>, sys_allocator<std::pair<void*, tracking_malloc_alloc_info*> > > tracking_malloc_alloc_info_table;
 typedef std::vector<tracking_malloc_alloc_opt, sys_allocator<tracking_malloc_alloc_opt>> tracking_malloc_alloc_opt_queue;
+typedef std::basic_string<char, std::char_traits<char>, sys_allocator<char>> sys_string;
+typedef std::map<const void*, sys_string, std::less<const void*>, sys_allocator<std::pair<const void*, sys_string>>> tracking_malloc_fname_cache;
 
 class tracking_malloc_record {
 public:
@@ -30,12 +33,15 @@ public:
     bool add_free(void* ptr);
 
 private:
-    void apply_alloc_opt_queue(tracking_malloc_alloc_opt_queue& opt_queue);
-    void output(const char* suffix);
     int work_thread();
+    void output(const char* suffix);
+    void alloc_opt_queue_apply(tracking_malloc_alloc_opt_queue& opt_queue);
+    void alloc_info_destory(tracking_malloc_alloc_info* info);
+    void alloc_info_analyse(tracking_malloc_alloc_info* info);
 
     tracking_malloc_alloc_info_table m_alloc_info_table;
     tracking_malloc_alloc_opt_queue m_alloc_opt_queue;
+    tracking_malloc_fname_cache m_fname_cache;
     std::recursive_mutex m_mutex;
     std::thread m_thread;
     int m_exit_flag;
