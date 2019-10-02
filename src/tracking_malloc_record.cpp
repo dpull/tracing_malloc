@@ -11,34 +11,34 @@
 #define OPT_TYPE_FREE       (2)
 #define IGNORE_STACK_LEVEL  (3)
 
-static record* g_record = nullptr;
+static tracking_malloc_record* g_record = nullptr;
 thread_local int record_disable_flag = 0;
 thread_local int record_thread_disable_flag = 0;
 
-void alloc_info_destory(alloc_info* info)
+void tracking_malloc_alloc_info_destory(tracking_malloc_alloc_info* info)
 {
     stacktrace_destroy(info->alloc_stacktrace);
     sys_delete(info);
 }
 
-record::~record()
+tracking_malloc_record::~tracking_malloc_record()
 {
     m_exit_flag = true;
     m_thread.join();
 }
 
-bool record::init()
+bool tracking_malloc_record::init()
 {
     m_exit_flag = false;
-    next_save_time = 0;
-    m_thread = std::thread(&record::work_thread, this);
+    next_save_time = time(NULL);
+    m_thread = std::thread(&tracking_malloc_record::work_thread, this);
     return true;
 }
 
-int record::work_thread()
+int tracking_malloc_record::work_thread()
 {
     time_t now;
-    alloc_opt_list swap_list;
+    tracking_malloc_alloc_opt_list swap_list;
 
     record_thread_disable_flag = 1;
     while (!m_exit_flag) {
@@ -47,37 +47,37 @@ int record::work_thread()
             swap_list.swap(m_alloc_opt_list);
         }
 
-        apply_alloc_opt_list(swap_list);
+        apply_tracking_malloc_alloc_opt_list(swap_list);
 
         now = time(NULL);
         if (now > next_save_time) {
-            next_save_time = now + 120;
-            output();
+            next_save_time = now + STACK_RECORD_INTERVAL_SEC;
+            output("interval");
         }
 
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
-    apply_alloc_opt_list(m_alloc_opt_list);
+    apply_tracking_malloc_alloc_opt_list(m_alloc_opt_list);
 
-    output();
+    output("exit");
 
     for (auto& it : m_alloc_info_table)
-        alloc_info_destory(it.second);
+        tracking_malloc_alloc_info_destory(it.second);
 
     assert(m_alloc_opt_list.empty());
     return 0;
 }
 
-void record::output()
+void tracking_malloc_record::output(const char* suffix)
 {
     char file_name[FILENAME_MAX];
-    sprintf(file_name, "/tmp/%s.%d", "tracking.malloc", getpid());
+    sprintf(file_name, "/tmp/%s.%s.%d", "tracking.malloc", suffix, getpid());
 
     FILE* stream = fopen(file_name, "w");
 
     for (auto& it : m_alloc_info_table) {
-        alloc_info* info = it.second;
+        tracking_malloc_alloc_info* info = it.second;
         fprintf(stream, "time:%d\tsize:%d\tptr:%p\n", info->alloc_time, info->alloc_size, it.first);
         if (!info->alloc_stacktrace_analysed) {
             stacktrace_analysis(info->alloc_stacktrace, nullptr);
@@ -94,7 +94,7 @@ void record::output()
     fclose(stream);
 }
 
-void record::apply_alloc_opt_list(alloc_opt_list& opt_list)
+void tracking_malloc_record::apply_tracking_malloc_alloc_opt_list(tracking_malloc_alloc_opt_list& opt_list)
 {
     for (auto& opt : opt_list) {
         switch (opt.opt_type) {
@@ -105,7 +105,7 @@ void record::apply_alloc_opt_list(alloc_opt_list& opt_list)
         case OPT_TYPE_FREE:
             auto it = m_alloc_info_table.find(opt.ptr);
             if (it != m_alloc_info_table.end()) {
-                alloc_info_destory(it->second);
+                tracking_malloc_alloc_info_destory(it->second);
                 m_alloc_info_table.erase(it);
             }
             break;
@@ -114,16 +114,16 @@ void record::apply_alloc_opt_list(alloc_opt_list& opt_list)
     opt_list.clear();
 }
 
-bool record::add_alloc(void* ptr, size_t size)
+bool tracking_malloc_record::add_alloc(void* ptr, size_t size)
 {
     auto alloc_stacktrace = stacktrace_create(STACK_TRACE_SKIP, STACK_TRACE_DEPTH);
     if (!alloc_stacktrace)
         return false;
 
-    alloc_opt opt;
+    tracking_malloc_alloc_opt opt;
     opt.opt_type = OPT_TYPE_ALLOC;
     opt.ptr = ptr;
-    opt.info = sys_new<alloc_info>();
+    opt.info = sys_new<tracking_malloc_alloc_info>();
     opt.info->alloc_size = size;
     opt.info->alloc_time = time(NULL);
     opt.info->alloc_stacktrace_analysed = false;
@@ -134,9 +134,9 @@ bool record::add_alloc(void* ptr, size_t size)
     return true;
 }
 
-bool record::add_free(void* ptr)
+bool tracking_malloc_record::add_free(void* ptr)
 {
-    alloc_opt opt;
+    tracking_malloc_alloc_opt opt;
     opt.opt_type = OPT_TYPE_FREE;
     opt.ptr = ptr;
     opt.info = nullptr;
@@ -149,7 +149,7 @@ bool record::add_free(void* ptr)
 extern "C" int record_init()
 {
     record_disable_flag = 1;
-    g_record = sys_new<record>();
+    g_record = sys_new<tracking_malloc_record>();
     g_record->init();
     record_disable_flag = 0;
     return 0;

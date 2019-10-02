@@ -8,6 +8,10 @@ set(CMAKE_C_STANDARD 11)
 set(PROJ_NAME "tracking_malloc")
 project(${PROJ_NAME})
 
+if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
+   add_definitions(-D_DEBUG)
+endif()
+
 aux_source_directory(. PROJ_SRC)
 
 add_library(${PROJ_NAME} SHARED ${PROJ_SRC})
