@@ -32,20 +32,30 @@ def save_file(file_path, data):
             file.write('{0}\n'.format(frame))
         file.write('========\n\n')
 
+
+addr2line_cache = {}
 def addr2line(address, fbase, fname):
     if fbase == '(nil)':
         return "{0}\t{1}\t{2}".format(address, fbase, fname)
 
-    address = int(address, 16)
-    fbase = int(fbase, 16)
-    if fbase != 0x400000:
-        address = address - fbase
+    if address in addr2line_cache:
+        cache_line = addr2line_cache[address]
+        if fbase == cache_line['fbase'] and fname == cache_line['fname']:
+            return cache_line['line']
 
-    pcmd = 'addr2line -f -s -C -e {0} 0x{1:x}'.format(fname, address)
+    address_i = int(address, 16)
+    fbase_i = int(fbase, 16)
+    if fbase_i != 0x400000:
+        address_i = address_i - fbase_i
+
+    pcmd = 'addr2line -f -s -C -e {0} 0x{1:x}'.format(fname, address_i)
     p = subprocess.Popen(pcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT);
     function = p.stdout.readline().rstrip('\n')
     file = p.stdout.readline().rstrip('\n')
-    return "{0}\t{1}\t{2}".format(function, file, fname)
+    line = "{0}\t{1}\t{2}".format(function, file, fname)
+
+    addr2line_cache[address] = {'fbase':fbase, 'fname':fname, 'line':line}
+    return line
 
 def proc(file_path):
     data = load_file(file_path)
