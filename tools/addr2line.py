@@ -63,7 +63,7 @@ def proc(file_path):
     for item in data:
         stack_line = []
         for frame in item['stack']:
-            match = frame.split("\t")
+            match = frame.split('\t')
             assert(len(match) == 3)
             line = addr2line(match[0], match[1], match[2])
             stack_line.append(line)
@@ -76,5 +76,5 @@ def main():
     for file_path in file_paths:
         proc(file_path)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
