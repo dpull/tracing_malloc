@@ -5,9 +5,11 @@
 
 struct stacktrace* stacktrace_create(int skip, int max_depth)
 {
-    int size = skip + max_depth;
-    if (skip < 0 || max_depth <= 0 || size == 0)
+    if (skip < 0 || max_depth <= 0)
         return NULL;
+
+    int size = skip + max_depth;
+
     
     void* buffer[size];
     int count = backtrace(buffer, size);

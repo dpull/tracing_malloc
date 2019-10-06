@@ -22,7 +22,7 @@ tracking_malloc_record::~tracking_malloc_record()
 bool tracking_malloc_record::init()
 {
     m_exit_flag = false;
-    next_save_time = time(NULL);
+    next_save_time = time(NULL) + STACK_RECORD_INTERVAL_SEC;
     m_alloc_opt_queue.reserve(STACK_RECORD_OPT_QUEUE_RESERVE);
     m_thread = std::thread(&tracking_malloc_record::work_thread, this);
     return true;
@@ -159,7 +159,7 @@ void tracking_malloc_record::alloc_info_analyse(tracking_malloc_alloc_info* info
     info->alloc_stacktrace_analysed = true;
 }
 
-extern "C" int record_init()
+int record_init()
 {
     record_disable_flag = 1;
     g_record = sys_new<tracking_malloc_record>();
@@ -168,7 +168,7 @@ extern "C" int record_init()
     return 0;
 }
 
-extern "C" int record_uninit()
+int record_uninit()
 {
     record_disable_flag = 1;
     sys_delete(g_record);
@@ -176,9 +176,9 @@ extern "C" int record_uninit()
     return 0;
 }
 
-extern "C" int record_alloc(void* ptr, size_t size)
+int record_alloc(void* ptr, size_t size)
 {
-    if (record_disable_flag || record_thread_disable_flag)
+    if (!ptr || record_disable_flag || record_thread_disable_flag)
         return 0;
 
     record_disable_flag = 1;
@@ -187,7 +187,7 @@ extern "C" int record_alloc(void* ptr, size_t size)
     return 0;
 }
 
-extern "C" int record_free(void* ptr)
+int record_free(void* ptr)
 {
     if (!ptr || record_disable_flag || record_thread_disable_flag)
         return 0;

@@ -7,7 +7,7 @@ import subprocess
 def load_file(file_path):
     file = open(file_path)
     data = []
-    line_data = None
+    line_data = {}
     while True:
         line = file.readline()
         if not line:
@@ -18,7 +18,7 @@ def load_file(file_path):
             line_data = {'time' : int(match.group(1)), 'size' : int(match.group(2)), 'ptr' : match.group(3), 'stack' : []}
         elif line.startswith('========'):
             data.append(line_data)
-            line_data = None
+            line_data = {}
         elif line_data:
             line = line.rstrip('\n')
             line_data['stack'].append(line)
@@ -32,14 +32,13 @@ def save_file(file_path, data):
             file.write('{0}\n'.format(frame))
         file.write('========\n\n')
 
-
-addr2line_cache = {}
+_addr2line_cache = {}
 def addr2line(address, fbase, fname):
     if fbase == '(nil)':
         return "{0}\t{1}\t{2}".format(address, fbase, fname)
 
-    if address in addr2line_cache:
-        cache_line = addr2line_cache[address]
+    if address in _addr2line_cache:
+        cache_line = _addr2line_cache[address]
         if fbase == cache_line['fbase'] and fname == cache_line['fname']:
             return cache_line['line']
 
@@ -49,17 +48,17 @@ def addr2line(address, fbase, fname):
         address_i = address_i - fbase_i
 
     pcmd = 'addr2line -f -s -C -e {0} 0x{1:x}'.format(fname, address_i)
-    p = subprocess.Popen(pcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT);
+    p = subprocess.Popen(pcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     function = p.stdout.readline().rstrip('\n')
     file = p.stdout.readline().rstrip('\n')
     line = "{0}\t{1}\t{2}".format(function, file, fname)
 
-    addr2line_cache[address] = {'fbase':fbase, 'fname':fname, 'line':line}
+    _addr2line_cache[address] = {'fbase':fbase, 'fname':fname, 'line':line}
     return line
 
 def proc(file_path):
     data = load_file(file_path)
-    data.sort(key=lambda x: x['time'])
+    data.sort(key = lambda x : x['time'])
 
     for item in data:
         stack_line = []
@@ -77,5 +76,5 @@ def main():
     for file_path in file_paths:
         proc(file_path)
 
-if __name__== "__main__":
+if __name__ == "__main__":
     main()

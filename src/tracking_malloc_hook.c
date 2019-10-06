@@ -34,7 +34,6 @@ static void* internal_malloc(size_t size)
     }
 
     abort();
-    return NULL;
 }
 
 static int is_internal_malloc(void* ptr)
