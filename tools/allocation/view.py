@@ -6,7 +6,7 @@ import math
 import tkinter 
 from tkinter import ttk
 from tkinter import filedialog
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.figure
 
 class Application(tkinter.Frame):    
@@ -58,6 +58,8 @@ class Application(tkinter.Frame):
 
         fig = matplotlib.figure.Figure(figsize = (6, 2), dpi = 100)
         self.__canvasAxes = fig.add_subplot(111)
+        self.__canvasAxes.set_xlabel('Time')
+        self.__canvasAxes.set_ylabel('Bytes')
         self.__canvasAxesBar = self.__canvasAxes.bar([], [])
         self.__canvasRender = FigureCanvasTkAgg(fig, master = canvas)  
         self.__canvasRender.draw()
@@ -71,21 +73,25 @@ class Application(tkinter.Frame):
         if xdataDelta < 0.6 and  xdataDelta > 0.4:
             return
         idx = math.floor(event.xdata + 0.5)
-        count = len(self.__canvasAxesBar)
+        count = len(self.__canvasAxesBarX)
         if idx < 0 or idx >= count:
             return
-        self.__onCommand('SelectCanvas', Index = idx)
+
+        self.LastSelectTimeStr = self.__canvasAxesBarX[idx]
+        self.highlightCanvas(idx)
+        self.__onCommand('SelectCanvas', TimeStr = self.LastSelectTimeStr)
 
     def __delayDrawCanvas(self):
         self.__canvasNeedRender = True
         self.after(10, self.__delayDrawCanvasCallback)
 
     def __delayDrawCanvasCallback(self):
-         if self.__canvasNeedRender: 
-             self.__canvasNeedRender = False 
-             self.__canvasRender.draw()         
+        if self.__canvasNeedRender: 
+            self.__canvasNeedRender = False 
+            self.__canvasRender.draw()         
 
     def updateCanvas(self, x, height):
+        self.__canvasAxesBarX = list(x)
         self.__canvasAxes.clear()
         self.__canvasAxesBar = self.__canvasAxes.bar(x, height)
         self.__delayDrawCanvas()
@@ -109,25 +115,44 @@ class Application(tkinter.Frame):
         self.__treeview.heading('Module', text='Module',anchor = tkinter.W)
         self.__treeview.heading('Size', text = 'Size',anchor = tkinter.W)
         self.__treeview.pack(side = tkinter.LEFT, fill = tkinter.BOTH, expand = 1)
+        self.__treeview.bind('<<TreeviewSelect>>', self.__selectTreeView)
+
+    def __selectTreeView(self, event):
+        tags = self.__treeview.item(self.__treeview.focus(), 'tags')
+        keyFrame = tags[0]
+        self.__onCommand('SelectTreeview', KeyFrame = keyFrame)
 
     def updateTreeView(self, dataList):
         self.__treeview.delete(*self.__treeview.get_children())
-        index = 0
-        for item in dataList:
-            index += 1
-            self.__treeview.insert('', index, text = item[0], values=(item[1], item[2]))
+        for idx, item in enumerate(dataList):
+            self.__treeview.insert('', idx + 1, text = item['function'], values=(item['module'], item['size']), tags = [item['keyFrame']])
 
     def __createDetail(self, root):
         node = tkinter.Frame(root)
         node.pack(side = tkinter.TOP)
         nodeTop = tkinter.Frame(node)
         nodeTop.pack(side = tkinter.TOP, fill = 'x')
-        btnPrev = ttk.Button(nodeTop, text='<<', command = lambda:self.__onCommand('PrevDetail'))
-        btnPrev.pack(side = tkinter.LEFT)
-        btnNext = ttk.Button(nodeTop, text='>>', command = lambda:self.__onCommand('NextDetail'))
-        btnNext.pack(side = tkinter.RIGHT)
-        self.__detail = ttk.Label(node, anchor = tkinter.NW)
-        self.__detail.pack(side = tkinter.TOP, fill = tkinter.BOTH, expand = 1)
+
+        self.__detailPrev = ttk.Button(nodeTop, text='<<', command = lambda:self.__onCommand('ShowDetail', Index = self.__detailIndex - 1))
+        self.__detailPrev.pack(side = tkinter.LEFT)
+
+        self.__detailCount = ttk.Label(nodeTop, text = '100/100')
+        self.__detailCount.pack(side = tkinter.LEFT, expand = 1)
+
+        self.__detailNext = ttk.Button(nodeTop, text='>>', command = lambda:self.__onCommand('ShowDetail', Index = self.__detailIndex + 1))
+        self.__detailNext.pack(side = tkinter.RIGHT)
+
+        self.__detailStack = ttk.Label(node, anchor = tkinter.NW, text = '', width = 50)
+        self.__detailStack.pack(side = tkinter.TOP, fill = tkinter.BOTH, expand = 1)
+
+    def updateDetail(self, idx, count, detail):
+        self.__detailIndex = idx
+        self.__detailCount['text'] = '{}/{}'.format(idx + 1, count)
+        self.__detailPrev['state'] = tkinter.NORMAL if idx > 0 else tkinter.DISABLED
+        self.__detailNext['state'] = tkinter.NORMAL if idx < (count - 1) else tkinter.DISABLED
+        print(detail)
+        print('\n'.join(detail['stack']))
+        self.__detailStack['text'] = 'Size:{}\n{}'.format(detail['size'], '\n'.join(detail['stack']))
 
     def setCommondDispatcher(self, dispatcher):
         self.__cmdDispatcher = dispatcher
@@ -145,8 +170,7 @@ class Application(tkinter.Frame):
         print('__onCommand', cmd)
         self.updateCanvas(['16:0{}'.format(x) for x in range(20)], [random.randint(10, 20) for x in range(20)])
         self.highlightCanvas(2)
-        self.updateTreeView()
-        self.__detail['text'] = "Test\n\nTest1"      
+        self.updateTreeView([])
 
 if __name__ == '__main__':
     app = Application()      

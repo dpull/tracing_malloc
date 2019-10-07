@@ -8,12 +8,13 @@ def load_file(file_path):
     file = open(file_path)
     data = []
     line_data = {}
+    pattern = re.compile(r'time:(\d+)\tsize:(\d+)\tptr:(0[xX][0-9a-fA-F]+)')
     while True:
         line = file.readline()
         if not line:
             break
         if line.startswith('time:'):
-            match = re.match(r'time:(\d+)\tsize:(\d+)\tptr:(0[xX][0-9a-fA-F]+)', line)
+            match = pattern.match(line)
             assert(match)
             line_data = {'time' : int(match.group(1)), 'size' : int(match.group(2)), 'ptr' : match.group(3), 'stack' : []}
         elif line.startswith('========'):

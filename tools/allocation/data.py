@@ -9,12 +9,13 @@ def load_file(file_path):
     file = open(file_path)
     data = []
     line_data = {}
+    pattern = re.compile(r'time:(\d+)\tsize:(\d+)\tptr:(0[xX][0-9a-fA-F]+)')
     while True:
         line = file.readline()
         if not line:
             break
         if line.startswith('time:'):
-            match = re.match(r'time:(\d+)\tsize:(\d+)\tptr:(0[xX][0-9a-fA-F]+)', line)
+            match = pattern.match(line)
             assert(match)
             line_data = {'time' : int(match.group(1)), 'size' : int(match.group(2)), 'ptr' : match.group(3), 'stack' : []}
         elif line.startswith('========'):
@@ -25,47 +26,59 @@ def load_file(file_path):
             line_data['stack'].append(line)
     return data
 
+def get_key_frame(item):
+    frame = item['stack'][1]
+    return frame
+
+def format_bytes(size):
+    power = 2**10
+    power_labels = ['', 'K', 'M', 'G', 'T']
+    n = 0
+    while size > power:
+        size /= power
+        n += 1
+    return ('%d%sB' if size == int(size) else '%.2f%sB') % (size, power_labels[n])    
+
 class DataSource: 
-    def __init__(self, file_path):
-        self.file_path = file_path
-        self.data = load_file(file_path)
-        self.timeAllocCache = {}
+    def __init__(self, filePath):
+        self.filePath = filePath
+        self.rawdata = load_file(filePath)
+        self.__procData()
 
-    def getAllocSizeByTime(self):
-        if self.timeAllocCache:
-            return self.timeAllocCache
+    def __procData(self):
+        self.data = {}
+        for idx, item in enumerate(self.rawdata):
+            timeStr = datetime.datetime.fromtimestamp(item['time']).strftime('%H:%M')
+            keyFrame = get_key_frame(item)
+            self.data.setdefault(timeStr, dict(size = 0, keyFrame = {}))
 
-        timeAllocCache = {}
-        for item in self.data:
-            time = datetime.datetime.fromtimestamp(item['time']).strftime('%H:%M')
-            timeAllocCache.setdefault(time, 0)
-            timeAllocCache[time] += item['size']
-
-        for k, v in timeAllocCache.items():
-            timeAllocCache[k] = v // 1024
+            itemData = self.data[timeStr]
+            itemData['size'] += item['size']
+            itemData['keyFrame'].setdefault(keyFrame, dict(size = 0, rawdata = []))
             
-        self.timeAllocCache = timeAllocCache
-        self.timeAllocCacheKeys = list(timeAllocCache.keys())
-        return self.timeAllocCache
+            itemKeyFrameData = itemData['keyFrame'][keyFrame]
+            itemKeyFrameData['size'] += item['size']
+            itemKeyFrameData['rawdata'].append(idx)
 
-    def getAllocSizeByTimeIndex(self, idx):
-        key = self.timeAllocCacheKeys[idx]
-        return key, self.timeAllocCache[key]
+    def getAllocSummary(self):
+        summary = {k : v['size'] for k, v in self.data.items()}
+        return summary
 
-    def getAllocByTime(self, key):
-        allocInfo = {}
-        for item in self.data:
-            time = datetime.datetime.fromtimestamp(item['time']).strftime('%H:%M')
-            if time == key:
-                frame = item['stack'][1]
-                allocInfo.setdefault(frame, {'size' : 0, 'items' : []})
-                allocInfo[frame]['size'] += item['size']
-                allocInfo[frame]['items'].append(item)
-        self.allocInfo = allocInfo
+    def getAllocFrame(self, timeStr):
+        itemData = self.data[timeStr]
+        keyFrameData = []
 
-        keys = []
-        for key, value in self.allocInfo.items():
-            info = key.split("\t")
-            keys.append([info[0], info[2], value['size']])
-        keys.sort(key = lambda x: x[2], reverse = True)       
-        return keys
+        for keyFrame, itemKeyFrameData in itemData['keyFrame'].items():
+            function, _, module = keyFrame.split('\t')
+            keyFrameData.append(dict(function = function, module = module, size = itemKeyFrameData['size'], keyFrame = keyFrame))
+        keyFrameData.sort(key = lambda x : x['size'], reverse = True)       
+        return keyFrameData
+
+    def getAllocDetail(self, timeStr, keyFrame):
+        itemKeyFrameData = self.data[timeStr]['keyFrame'][keyFrame]
+        detail = []
+        for rawIdx in itemKeyFrameData['rawdata']:
+            item = self.rawdata[rawIdx]
+            detail.append(dict(stack = item['stack'], size = item['size']))
+        detail.sort(key = lambda x : x['size'], reverse = True)
+        return detail
