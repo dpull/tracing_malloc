@@ -27,7 +27,7 @@ class Application(tkinter.Frame):
 
         frame = tkinter.Frame(root, borderwidth = 1)
         root.add(frame)
-        self.__createTreeView(frame)
+        self.__createFrameList(frame)
         self.__createDetail(frame)
 
     def __createMenu(self):
@@ -105,27 +105,27 @@ class Application(tkinter.Frame):
             self.__canvasAxesBar[i].set_color('lightsteelblue' if i != highlightIdx else 'steelblue')
         self.__delayDrawCanvas()      
 
-    def __createTreeView(self, root):
-        self.__treeview = ttk.Treeview(root)
-        self.__treeview['columns'] = ('Module', 'Size')
-        self.__treeview.column('#0', width=512, minwidth=256)
-        self.__treeview.column('Module', width = 256, minwidth = 128, stretch = tkinter.NO)
-        self.__treeview.column('Size', width = 80, minwidth = 50, stretch = tkinter.NO)
-        self.__treeview.heading('#0', text = 'Function',anchor = tkinter.W)
-        self.__treeview.heading('Module', text='Module',anchor = tkinter.W)
-        self.__treeview.heading('Size', text = 'Size',anchor = tkinter.W)
-        self.__treeview.pack(side = tkinter.LEFT, fill = tkinter.BOTH, expand = 1)
-        self.__treeview.bind('<<TreeviewSelect>>', self.__selectTreeView)
+    def __createFrameList(self, root):
+        self.__frameList = ttk.Treeview(root)
+        self.__frameList['columns'] = ('Module', 'Size')
+        self.__frameList.column('#0', width=512, minwidth=256)
+        self.__frameList.column('Module', width = 256, minwidth = 128, stretch = tkinter.NO)
+        self.__frameList.column('Size', width = 80, minwidth = 50, stretch = tkinter.NO)
+        self.__frameList.heading('#0', text = 'Function',anchor = tkinter.W)
+        self.__frameList.heading('Module', text='Module',anchor = tkinter.W)
+        self.__frameList.heading('Size', text = 'Size',anchor = tkinter.W)
+        self.__frameList.pack(side = tkinter.LEFT, fill = tkinter.BOTH, expand = 1)
+        self.__frameList.bind('<<TreeviewSelect>>', self.__selectFrameList)
 
-    def __selectTreeView(self, event):
-        tags = self.__treeview.item(self.__treeview.focus(), 'tags')
+    def __selectFrameList(self, event):
+        tags = self.__frameList.item(self.__frameList.focus(), 'tags')
         keyFrame = tags[0]
         self.__onCommand('SelectTreeview', KeyFrame = keyFrame)
 
-    def updateTreeView(self, dataList):
-        self.__treeview.delete(*self.__treeview.get_children())
+    def updateFrameList(self, dataList):
+        self.__frameList.delete(*self.__frameList.get_children())
         for idx, item in enumerate(dataList):
-            self.__treeview.insert('', idx + 1, text = item['function'], values=(item['module'], item['size']), tags = [item['keyFrame']])
+            self.__frameList.insert('', idx + 1, text = item['function'], values=(item['module'], item['size']), tags = [item['keyFrame']])
 
     def __createDetail(self, root):
         node = tkinter.Frame(root)
@@ -136,23 +136,32 @@ class Application(tkinter.Frame):
         self.__detailPrev = ttk.Button(nodeTop, text='<<', command = lambda:self.__onCommand('ShowDetail', Index = self.__detailIndex - 1))
         self.__detailPrev.pack(side = tkinter.LEFT)
 
-        self.__detailCount = ttk.Label(nodeTop, text = '100/100')
-        self.__detailCount.pack(side = tkinter.LEFT, expand = 1)
+        self.__detailSummary = ttk.Label(nodeTop, text = '100/100')
+        self.__detailSummary.pack(side = tkinter.LEFT, expand = 1)
 
         self.__detailNext = ttk.Button(nodeTop, text='>>', command = lambda:self.__onCommand('ShowDetail', Index = self.__detailIndex + 1))
         self.__detailNext.pack(side = tkinter.RIGHT)
 
-        self.__detailStack = ttk.Label(node, anchor = tkinter.NW, text = '', width = 50)
+        self.__detailStack = ttk.Treeview(node)
+        self.__detailStack['columns'] = ('File', 'Module')
+        self.__detailStack.column('#0', width=256, minwidth=32)
+        self.__detailStack.column('File', width = 128, minwidth = 32, stretch = tkinter.NO)
+        self.__detailStack.column('Module', width = 64, minwidth = 32, stretch = tkinter.NO)
+        self.__detailStack.heading('#0', text = 'Function',anchor = tkinter.W)
+        self.__detailStack.heading('File', text = 'File',anchor = tkinter.W)
+        self.__detailStack.heading('Module', text='Module',anchor = tkinter.W)
         self.__detailStack.pack(side = tkinter.TOP, fill = tkinter.BOTH, expand = 1)
 
     def updateDetail(self, idx, count, detail):
         self.__detailIndex = idx
-        self.__detailCount['text'] = '{}/{}'.format(idx + 1, count)
+        self.__detailSummary['text'] = 'Size:{}({}/{})'.format(detail['size'], idx + 1, count)
         self.__detailPrev['state'] = tkinter.NORMAL if idx > 0 else tkinter.DISABLED
         self.__detailNext['state'] = tkinter.NORMAL if idx < (count - 1) else tkinter.DISABLED
-        print(detail)
-        print('\n'.join(detail['stack']))
-        self.__detailStack['text'] = 'Size:{}\n{}'.format(detail['size'], '\n'.join(detail['stack']))
+
+        self.__detailStack.delete(*self.__detailStack.get_children())
+        for idx, line in enumerate(detail['stack']):
+            function, fileName, module = line.split('\t')
+            self.__detailStack.insert('', idx + 1, text = function, values=(fileName, module))
 
     def setCommondDispatcher(self, dispatcher):
         self.__cmdDispatcher = dispatcher
@@ -170,7 +179,7 @@ class Application(tkinter.Frame):
         print('__onCommand', cmd)
         self.updateCanvas(['16:0{}'.format(x) for x in range(20)], [random.randint(10, 20) for x in range(20)])
         self.highlightCanvas(2)
-        self.updateTreeView([])
+        self.updateFrameList([])
 
 if __name__ == '__main__':
     app = Application()      

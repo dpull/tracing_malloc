@@ -19,7 +19,7 @@ class Controller:
         self.__dataSource = dataSource
         self.__allocSummary = self.__dataSource.getAllocSummary()
         app.updateCanvas(self.__allocSummary.keys(), self.__allocSummary.values())
-        app.updateTreeView([])
+        app.updateFrameList([])
 
     def SelectCanvas(self, app, **kwargs):
         timeStr = kwargs['TimeStr']
@@ -29,7 +29,7 @@ class Controller:
         keyFrameData = self.__dataSource.getAllocFrame(timeStr)
         for v in keyFrameData:
             v['size'] = data.format_bytes(v['size'])
-        app.updateTreeView(keyFrameData)
+        app.updateFrameList(keyFrameData)
 
     def SelectTreeview(self, app, **kwargs):
         keyFrame = kwargs['KeyFrame']
