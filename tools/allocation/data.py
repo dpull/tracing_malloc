@@ -26,9 +26,24 @@ def load_file(file_path):
             line_data['stack'].append(line)
     return data
 
+__ignore_frame_pattern = [
+    re.compile(r'[\S\s]*libc\.so(\.\d+)*$'),
+    re.compile(r'[\S\s]*libstdc\+\+\.so(\.\d+)*$'),
+    re.compile(r'[\S\s]*ld-linux-x86-64\.so(\.\d+)*$'),
+    re.compile(r'[\S\s]*libtracking_malloc\.so$'),
+]
+
+def is_ignore_frame(frame):
+    for pattern in __ignore_frame_pattern:
+        if pattern.search(frame):
+            return True
+    return False
+
 def get_key_frame(item):
-    frame = item['stack'][1]
-    return frame
+    for frame in item['stack']:
+        if is_ignore_frame(frame):
+            continue
+        return frame
 
 def format_bytes(size):
     power = 2**10
