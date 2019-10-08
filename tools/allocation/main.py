@@ -23,19 +23,15 @@ class Controller:
 
     def SelectCanvas(self, app, **kwargs):
         timeStr = kwargs['TimeStr']
-        size = data.format_bytes(self.__allocSummary[timeStr])
+        size = view.format_bytes(self.__allocSummary[timeStr])
         app.updateStatusBar('{0} alloc {1}.'.format(timeStr, size))
 
         keyFrameData = self.__dataSource.getAllocFrame(timeStr)
-        for v in keyFrameData:
-            v['size'] = data.format_bytes(v['size'])
         app.updateFrameList(keyFrameData)
 
     def SelectTreeview(self, app, **kwargs):
         keyFrame = kwargs['KeyFrame']
         self.__allocDetail = self.__dataSource.getAllocDetail(app.LastSelectTimeStr, keyFrame)
-        for v in self.__allocDetail:
-            v['size'] = data.format_bytes(v['size'])
         app.updateDetail(0, len(self.__allocDetail), self.__allocDetail[0])
 
     def ShowDetail(self, app, **kwargs):

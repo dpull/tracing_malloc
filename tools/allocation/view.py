@@ -9,6 +9,19 @@ from tkinter import filedialog
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.figure
 
+def format_bytes(size):
+    power = 2**10
+    power_labels = ['', 'K', 'M', 'G', 'T']
+    n = 0
+    while size > power:
+        size /= power
+        n += 1
+    return ('%d%sB' if size == int(size) else '%.2f%sB') % (size, power_labels[n])
+
+@matplotlib.ticker.FuncFormatter
+def _major_formatter(x, pos):
+    return format_bytes(x)     
+
 class Application(tkinter.Frame):    
     def __init__(self, master = None):
         tkinter.Frame.__init__(self, master)   
@@ -60,6 +73,7 @@ class Application(tkinter.Frame):
         self.__canvasAxes = fig.add_subplot(111)
         self.__canvasAxes.set_xlabel('Time')
         self.__canvasAxes.set_ylabel('Bytes')
+        self.__canvasAxes.yaxis.set_major_formatter(_major_formatter)         
         self.__canvasAxesBar = self.__canvasAxes.bar([], [])
         self.__canvasRender = FigureCanvasTkAgg(fig, master = canvas)  
         self.__canvasRender.draw()
@@ -92,7 +106,8 @@ class Application(tkinter.Frame):
 
     def updateCanvas(self, x, height):
         self.__canvasAxesBarX = list(x)
-        self.__canvasAxes.clear()
+        # self.__canvasAxes.clear()
+        self.__canvasAxesBar.remove()
         self.__canvasAxesBar = self.__canvasAxes.bar(x, height)
         self.__delayDrawCanvas()
 
@@ -125,7 +140,7 @@ class Application(tkinter.Frame):
     def updateFrameList(self, dataList):
         self.__frameList.delete(*self.__frameList.get_children())
         for idx, item in enumerate(dataList):
-            self.__frameList.insert('', idx + 1, text = item['function'], values=(item['module'], item['size']), tags = [item['keyFrame']])
+            self.__frameList.insert('', idx + 1, text = item['function'], values=(item['module'], format_bytes(item['size'])), tags = [item['keyFrame']])
 
     def __createDetail(self, root):
         node = tkinter.Frame(root)
@@ -154,7 +169,7 @@ class Application(tkinter.Frame):
 
     def updateDetail(self, idx, count, detail):
         self.__detailIndex = idx
-        self.__detailSummary['text'] = 'Size:{}({}/{})'.format(detail['size'], idx + 1, count)
+        self.__detailSummary['text'] = 'Size:{}({}/{})'.format(format_bytes(detail['size']), idx + 1, count)
         self.__detailPrev['state'] = tkinter.NORMAL if idx > 0 else tkinter.DISABLED
         self.__detailNext['state'] = tkinter.NORMAL if idx < (count - 1) else tkinter.DISABLED
 

@@ -45,15 +45,6 @@ def get_key_frame(item):
             continue
         return frame
 
-def format_bytes(size):
-    power = 2**10
-    power_labels = ['', 'K', 'M', 'G', 'T']
-    n = 0
-    while size > power:
-        size /= power
-        n += 1
-    return ('%d%sB' if size == int(size) else '%.2f%sB') % (size, power_labels[n])    
-
 class DataSource: 
     def __init__(self, filePath):
         self.filePath = filePath
