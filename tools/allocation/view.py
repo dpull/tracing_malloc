@@ -129,7 +129,7 @@ class Application(tkinter.Frame):
 
     def __createDetail(self, root):
         node = tkinter.Frame(root)
-        node.pack(side = tkinter.TOP)
+        node.pack(side = tkinter.TOP, fill = tkinter.BOTH, expand = 1)
         nodeTop = tkinter.Frame(node)
         nodeTop.pack(side = tkinter.TOP, fill = 'x')
 
