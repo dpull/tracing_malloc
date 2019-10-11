@@ -42,4 +42,9 @@ if __name__ == '__main__':
     ctrl = Controller()
     app = view.Application()
     app.setCommondDispatcher(ctrl.commond)              
-    app.mainloop()       
+    while True:
+        try:
+            app.mainloop()
+            break
+        except UnicodeDecodeError:
+            pass

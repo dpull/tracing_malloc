@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 
 #define likely(x)    __builtin_expect(!!(x), 1)
 #define unlikely(x)  __builtin_expect(!!(x), 0)
@@ -107,15 +108,25 @@ void* calloc(size_t nmemb, size_t size)
 void *realloc(void* ptr, size_t size)
 {
     if (unlikely(is_internal_malloc(ptr))) {
+        if (size == 0)
+            return NULL;
+
         void* new_ptr = internal_malloc(size);
         memcpy(new_ptr, ptr, size);
         return new_ptr;
     }
 
     void* new_ptr = g_sys_realloc(ptr, size);
-    if (new_ptr) {
+    if (size == 0) {
         record_free(ptr);
-        record_alloc(new_ptr, size);
+        assert(new_ptr == NULL);
+        return new_ptr;
     }
+
+    if (new_ptr == NULL) 
+        return new_ptr;
+
+    record_free(ptr);
+    record_alloc(new_ptr, size);
     return new_ptr;
 }
