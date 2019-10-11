@@ -19,11 +19,6 @@ extern "C" {
 void* sys_malloc(size_t size);
 void sys_free(void* ptr);
 
-int record_init();
-int record_uninit();
-int record_alloc(void* ptr, size_t size);
-int record_free(void* ptr);
-
 #ifdef __cplusplus
 }
 #endif

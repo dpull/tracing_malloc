@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-#define SENTINEL (-1)
+#define HASHMAP_SENTINEL (-1)
 
 struct hashmap {
     struct hashmap_value* data;
@@ -45,12 +45,13 @@ struct hashmap* hashmap_create(const char* file, size_t value_max_count)
 
     memset(data, 0, length);
 
-    struct hashmap* hashmap = (struct hashmap*)malloc(sizeof(*hashmap));
+    struct hashmap* hashmap = (struct hashmap*)sys_malloc(sizeof(*hashmap));
     hashmap->data = data;
     hashmap->max_count = value_max_count;
     hashmap->length = length;
     if (pthread_mutex_init(&hashmap->mutex, NULL) != 0) {
-        hashmap_destory(hashmap);
+        munmap(hashmap->data, hashmap->length);
+        sys_free(hashmap);
         return NULL;
     }
     return hashmap;
@@ -58,8 +59,10 @@ struct hashmap* hashmap_create(const char* file, size_t value_max_count)
 
 int hashmap_destory(struct hashmap* hashmap)
 {
+    pthread_mutex_destroy(&hashmap->mutex);
     munmap(hashmap->data, hashmap->length);
-    free(hashmap);
+    sys_free(hashmap);
+    return 0;
 }
 
 struct hashmap_value* hashmap_add(struct hashmap* hashmap, intptr_t pointer)
@@ -71,7 +74,7 @@ struct hashmap_value* hashmap_add(struct hashmap* hashmap, intptr_t pointer)
 
     for(size_t i = 0; i < hashmap->max_count; i++) {
         struct hashmap_value* data = hashmap->data + index;
-        if (data->pointer == 0 || data->pointer == SENTINEL) {
+        if (data->pointer == 0 || data->pointer == HASHMAP_SENTINEL) {
             data->pointer = pointer;
 
             pthread_mutex_unlock(&hashmap->mutex);
@@ -90,11 +93,12 @@ struct hashmap_value* hashmap_get(struct hashmap* hashmap, intptr_t pointer)
     int index = pointer % max_count;
     for(size_t i = 0; i < hashmap->max_count; i++) {
         struct hashmap_value* data = hashmap->data + index;
-        if (data->pointer == pointer) {
+        if (data->pointer == pointer) 
             return data;
-        }
+
         if (!data->pointer) 
             break;
+
         index = (index + 1) % max_count;
     }
     return NULL;
@@ -106,7 +110,7 @@ int hashmap_remove(struct hashmap* hashmap, intptr_t pointer)
 
     struct hashmap_value* data = hashmap_get(hashmap, pointer);
     if (data)
-        data->pointer = SENTINEL;
+        data->pointer = HASHMAP_SENTINEL;
 
     pthread_mutex_unlock(&hashmap->mutex);
     return data ? 0 : -1;
