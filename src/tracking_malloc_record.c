@@ -17,7 +17,8 @@ struct record_data {
 struct record_data g_record = {NULL, 0};
 __thread int record_disable_flag = 0;
 
-static int _record_init() 
+__attribute__((always_inline)) 
+static inline int _record_init() 
 {
     pid_t pid =  getpid();
     char file_name[FILENAME_MAX];
@@ -46,7 +47,8 @@ static int _record_debug(struct hashmap_value* hashmap_value)
     return 0;
 }
 
-static void _record_uninit() 
+__attribute__((always_inline)) 
+static inline void _record_uninit() 
 {
     /* 
     hashmap_traverse(g_record.hashmap, _record_debug); 
@@ -63,7 +65,8 @@ void record_uninit()
     record_disable_flag = 0;
 }
 
-static int _record_alloc(int add_flag, void* ptr, size_t size) 
+__attribute__((always_inline)) 
+static inline int _record_alloc(int add_flag, void* ptr, size_t size) 
 {
     void* buffer[STACK_TRACE_DEPTH + STACK_TRACE_SKIP];
     memset(buffer, 0, sizeof(buffer));
