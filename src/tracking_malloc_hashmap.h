@@ -21,6 +21,9 @@ struct hashmap_value* hashmap_add(struct hashmap* hashmap, intptr_t pointer);
 struct hashmap_value* hashmap_get(struct hashmap* hashmap, intptr_t pointer);
 int hashmap_remove(struct hashmap* hashmap, intptr_t pointer);
 
+typedef int (hashmap_callback)(struct hashmap_value* hashmap_value);
+void hashmap_traverse(struct hashmap* hashmap, hashmap_callback* callback);
+
 #ifdef __cplusplus
 }
 #endif

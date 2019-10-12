@@ -8,8 +8,6 @@
 
 struct stacktrace_libunwind_frame {
     unw_word_t reg_ip;
-    unw_word_t offset;
-    char proc_name[1024];
 };
 
 stacktrace_libunwind::stacktrace_libunwind()
@@ -37,15 +35,6 @@ void stacktrace_libunwind::collect()
 
         auto* frame = stacktrace + i;
         unw_get_reg(&cursor, UNW_REG_IP, &frame->reg_ip);
-
-        int status = unw_get_proc_name(&cursor, frame->proc_name, sizeof(frame->proc_name), &frame->offset);
-        if (status == 0) {
-            char* demangled = abi::__cxa_demangle(frame->proc_name, nullptr, nullptr, &status);
-            if (status == 0)
-                strncpy(frame->proc_name, demangled, sizeof(frame->proc_name));
-            if (demangled)
-                free(demangled);
-        }
         stacktrace_len++;
     }
 }
@@ -60,9 +49,6 @@ void stacktrace_libunwind::output(FILE* stream)
     fprintf(stream, "stacktrace_libunwind:%d\n", stacktrace_len);
     for (auto i = 0; i < stacktrace_len; ++i) {
         auto frame = stacktrace + i;
-        if (frame->proc_name[0])
-            fprintf(stream, "%d# %s\n", i, frame->proc_name);
-        else
-            fprintf(stream, "%d# 0x%lx\n", i, frame->reg_ip);
+        fprintf(stream, "%d# 0x%lx\n", i, frame->reg_ip);
     }
 }

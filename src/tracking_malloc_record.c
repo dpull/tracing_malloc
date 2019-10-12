@@ -40,8 +40,17 @@ int record_init()
     return ret;
 }
 
+static int _record_debug(struct hashmap_value* hashmap_value) 
+{
+    printf("ptr:%p, size:%lld\n", (void*)hashmap_value->pointer, hashmap_value->alloc_size);
+    return 0;
+}
+
 static void _record_uninit() 
 {
+    /* 
+    hashmap_traverse(g_record.hashmap, _record_debug); 
+    */
     hashmap_destory(g_record.hashmap);
     g_record.hashmap = NULL;
     g_record.pid = 0;
@@ -74,7 +83,7 @@ static int _record_alloc(int add_flag, void* ptr, size_t size)
     hashmap_value->alloc_time = (int64_t)time(NULL);
     hashmap_value->alloc_size = size;
     for (int i = 0; i < STACK_TRACE_DEPTH; ++i) {
-        hashmap_value->address[i + STACK_TRACE_SKIP] = (int64_t)buffer[i];
+        hashmap_value->address[i] = (int64_t)buffer[i + STACK_TRACE_SKIP];
     }
 }
 
