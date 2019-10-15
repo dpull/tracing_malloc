@@ -5,7 +5,7 @@
 
 struct stacktrace {
     virtual ~stacktrace() {}
-    virtual void collect() = 0;
-    virtual void analysis() = 0;
-    virtual void output(FILE* stream) = 0;
+    virtual void collect() {}
+    virtual void analysis() {}
+    virtual void output(FILE* stream) {}
 };

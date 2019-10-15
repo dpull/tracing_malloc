@@ -3,6 +3,9 @@
 #include <cxxabi.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef USE_LIBUNWIND
+
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 
@@ -39,11 +42,6 @@ void stacktrace_libunwind::collect()
     }
 }
 
-void stacktrace_libunwind::analysis()
-{
-
-}
-
 void stacktrace_libunwind::output(FILE* stream)
 {
     fprintf(stream, "stacktrace_libunwind:%d\n", stacktrace_len);
@@ -52,3 +50,5 @@ void stacktrace_libunwind::output(FILE* stream)
         fprintf(stream, "%d# 0x%lx\n", i, frame->reg_ip);
     }
 }
+
+#endif // USE_LIBUNWIND

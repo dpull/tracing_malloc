@@ -2,12 +2,12 @@
 #define _GNU_SOURCE
 #endif
 #include <dlfcn.h>
-#include "stacktrace_current.h"
+#include "stacktrace_backtrace_dladdr.h"
 #include <execinfo.h>
 #include <stdlib.h>
 #include <cxxabi.h>
 
-struct stacktrace_current_frame {
+struct stacktrace_backtrace_dladdr_frame {
     void* address = nullptr;
     const char* fname = nullptr;
     void* fbase = nullptr;
@@ -15,25 +15,25 @@ struct stacktrace_current_frame {
     void* saddr = nullptr;
     const char* demangled = nullptr;
 
-    ~stacktrace_current_frame() {
+    ~stacktrace_backtrace_dladdr_frame() {
         if (demangled)
             free((void*)demangled);
     }
 };
 
-stacktrace_current::stacktrace_current()
+stacktrace_backtrace_dladdr::stacktrace_backtrace_dladdr()
 {
-    stacktrace = new stacktrace_current_frame[STACK_TRACE_DEPTH];
+    stacktrace = new stacktrace_backtrace_dladdr_frame[STACK_TRACE_DEPTH];
     stacktrace_len = 0;
 }
 
-stacktrace_current::~stacktrace_current()
+stacktrace_backtrace_dladdr::~stacktrace_backtrace_dladdr()
 {
     if (stacktrace)
         delete[] stacktrace;
 }
 
-void stacktrace_current::collect() 
+void stacktrace_backtrace_dladdr::collect() 
 {
     void* buffer[STACK_TRACE_DEPTH];
     stacktrace_len = backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]));
@@ -43,7 +43,7 @@ void stacktrace_current::collect()
     }
 }
 
-void stacktrace_current::analysis() 
+void stacktrace_backtrace_dladdr::analysis() 
 {
     int status;
     Dl_info dli;
@@ -63,9 +63,9 @@ void stacktrace_current::analysis()
     }
 }
 
-void stacktrace_current::output(FILE* stream)
+void stacktrace_backtrace_dladdr::output(FILE* stream)
 {
-    fprintf(stream, "stacktrace_current:%d\n", stacktrace_len);
+    fprintf(stream, "stacktrace_backtrace_dladdr:%d\n", stacktrace_len);
     for (auto i = 0; i < stacktrace_len; ++i) {
         auto frame = stacktrace + i;
         if (frame->sname)
