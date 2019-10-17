@@ -11,6 +11,12 @@
 
 static std::atomic<long long> collect_cost[comparison_type_total];
 static std::atomic<long long> analysis_cost[comparison_type_total];
+static comparison_type cur_comparison_type = comparison_type_total;
+
+void set_comparison_type(comparison_type type)
+{
+    cur_comparison_type = type;
+}
 
 stacktrace_comparison::stacktrace_comparison()
 {
@@ -34,6 +40,9 @@ stacktrace_comparison::~stacktrace_comparison()
 void stacktrace_comparison::collect() 
 {
     for (auto i = 0; i < comparison_type_total; ++i) {
+        if (i != cur_comparison_type)
+            continue;
+
         auto st = stacktrace_array[i];
         if (!st)
             continue;
@@ -49,6 +58,9 @@ void stacktrace_comparison::collect()
 void stacktrace_comparison::analysis()
 {
     for (auto i = 0; i < comparison_type_total; ++i) {
+        if (i != cur_comparison_type)
+            continue;
+
         auto st = stacktrace_array[i];
         if (!st)
             continue;
@@ -64,6 +76,9 @@ void stacktrace_comparison::analysis()
 void stacktrace_comparison::output(FILE* stream)
 {
     for (auto i = 0; i < comparison_type_total; ++i) {
+        if (i != cur_comparison_type)
+            continue;
+
         auto st = stacktrace_array[i];
         if (!st)
             continue;

@@ -36,15 +36,19 @@ void myfunc(int ncalls)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2) {
-        fprintf(stderr, "%s num-calls\n", argv[0]);
+    if (argc != 3) {
+        fprintf(stderr, "%s st_type num_calls\n", argv[0]);
         return 1;
     }
 
-    auto count = atoi(argv[1]);
-    disable_output_flag = count > 1;
-    for (auto i = 0; i < count; ++i) 
-        myfunc(i);
+    auto stacktrace_type = atoi(argv[1]);
+    auto num_calls = atoi(argv[2]);
+    disable_output_flag = num_calls > 1;
+
+    set_comparison_type((comparison_type)stacktrace_type);
+    for (auto ncalls = 0; ncalls < num_calls; ++ncalls) 
+        myfunc(ncalls);
+
     stacktrace_comparison::output_comparison(stderr);
     return 0;
 }

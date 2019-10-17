@@ -5,7 +5,6 @@
 #include <unwind.h>
 
 struct libgcc_backtrace_data {
-    void* array[STACK_TRACE_DEPTH];
     int skip;
     void** pos;
     void** end;
@@ -27,12 +26,11 @@ static _Unwind_Reason_Code libgcc_backtrace_callback(struct _Unwind_Context* ctx
 void stacktrace_gcc_unwind::collect() 
 {
     struct libgcc_backtrace_data data;
-    memset(&data.array, 0, sizeof(data.array));
     data.skip = 0;
-    data.pos = data.array;
-    data.end = data.array + sizeof(data.array) / sizeof(data.array[0]);
-
+    data.pos = buffer;
+    data.end = buffer + sizeof(buffer) / sizeof(buffer[0]);
     _Unwind_Backtrace(libgcc_backtrace_callback, &data);
+    size = data.pos - buffer;
 }
 
 void stacktrace_gcc_unwind::output(FILE* stream)
