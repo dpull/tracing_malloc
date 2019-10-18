@@ -24,7 +24,6 @@ set_target_properties(${PROJ_NAME} PROPERTIES LINK_FLAGS -rdynamic)
 target_link_libraries(${PROJ_NAME} dl)
 
 if(USE_LIBUNWIND) 
-    target_link_libraries(${PROJ_NAME} unwind-x86_64.a)
     target_link_libraries(${PROJ_NAME} unwind.a)
 endif(USE_LIBUNWIND)
 

@@ -96,7 +96,7 @@ struct hashmap_value* hashmap_get(struct hashmap* hashmap, intptr_t pointer)
         if (hashmap_value->pointer == pointer) 
             return hashmap_value;
 
-        if (!hashmap_value->pointer) 
+        if (hashmap_value->pointer == 0) 
             break;
 
         index = (index + 1) % max_count;

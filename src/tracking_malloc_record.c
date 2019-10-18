@@ -1,13 +1,13 @@
 #include "tracking_malloc.h"
 #include "tracking_malloc_record.h"
 #include "tracking_malloc_hashmap.h"
+#include "tracking_malloc_stacktrace.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include <assert.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <execinfo.h>
 
 struct record_data {
     struct hashmap* hashmap;
@@ -70,8 +70,8 @@ static inline int _record_alloc(int add_flag, void* ptr, size_t size)
 {
     void* buffer[STACK_TRACE_DEPTH + STACK_TRACE_SKIP];
     memset(buffer, 0, sizeof(buffer));
-    int count = backtrace(buffer, sizeof(buffer) / sizeof(buffer[0])); 
-    if (count == 0)
+    int count = stack_backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]), STACK_TRACE_SKIP); 
+    if (count < STACK_TRACE_SKIP)
         return -1;
 
     struct hashmap_value* hashmap_value;
