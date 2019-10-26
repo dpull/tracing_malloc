@@ -24,8 +24,7 @@ target_link_libraries(${PROJ_NAME} dl)
 target_link_libraries(${PROJ_NAME} pthread)
 
 if(USE_LIBUNWIND) 
-    target_link_libraries(${PROJ_NAME} /data/home/archerdchen/tmp/libunwind/src/.libs/libunwind.a)
-#    target_link_libraries(${PROJ_NAME} unwind.a)
+    target_link_libraries(${PROJ_NAME} unwind.a)
 endif(USE_LIBUNWIND)
 
 message(STATUS *******************************************************)
