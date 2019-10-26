@@ -30,7 +30,7 @@ __ignore_frame_pattern = [
     re.compile(r'[\S\s]*libc\.so(\.\d+)*$'),
     re.compile(r'[\S\s]*libstdc\+\+\.so(\.\d+)*$'),
     re.compile(r'[\S\s]*ld-linux-x86-64\.so(\.\d+)*$'),
-    re.compile(r'[\S\s]*libtracking_malloc\.so$'),
+    re.compile(r'[\S\s]*libtracing_malloc\.so$'),
 ]
 
 def is_ignore_frame(frame):

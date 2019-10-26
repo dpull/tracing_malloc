@@ -1,7 +1,7 @@
-#include "tracking_malloc.h"
-#include "tracking_malloc_record.h"
-#include "tracking_malloc_hashmap.h"
-#include "tracking_malloc_stacktrace.h"
+#include "tracing_malloc.h"
+#include "tracing_malloc_record.h"
+#include "tracing_malloc_hashmap.h"
+#include "tracing_malloc_stacktrace.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>

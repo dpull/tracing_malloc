@@ -5,7 +5,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD 11)
 
-set(PROJ_NAME "tracking_malloc")
+set(PROJ_NAME "tracing_malloc")
 project(${PROJ_NAME})
 
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
