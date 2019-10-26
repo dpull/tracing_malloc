@@ -1,0 +1,17 @@
+#!/bin/sh
+
+libunwind=./libunwind-master
+if [ ! -d "${libunwind}" ]
+then
+    wget -O libunwind-master.zip https://github.com/libunwind/libunwind/archive/master.zip
+    unzip libunwind-master.zip
+fi
+cd ${libunwind}
+
+./autogen.sh 
+./configure CFLAGS=-fPIC 
+make -j 8
+sudo make install
+
+
+

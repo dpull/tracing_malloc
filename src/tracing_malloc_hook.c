@@ -5,9 +5,6 @@
 #include <unistd.h>
 #include <assert.h>
 
-#define likely(x)    __builtin_expect(!!(x), 1)
-#define unlikely(x)  __builtin_expect(!!(x), 0)
-
 static char* internal_malloc_buffer = NULL;
 static char* internal_malloc_buffer_end = NULL;
 static char* internal_malloc_buffer_pos = NULL;
@@ -106,7 +103,7 @@ void* calloc(size_t nmemb, size_t size)
     return ptr;
 }
 
-void *realloc(void* ptr, size_t size)
+void* realloc(void* ptr, size_t size)
 {
     if (unlikely(is_internal_malloc(ptr))) {
         if (size == 0)
@@ -118,16 +115,20 @@ void *realloc(void* ptr, size_t size)
     }
 
     void* new_ptr = g_sys_realloc(ptr, size);
-    if (size == 0) {
+    if (unlikely(size == 0)) {
         record_free(ptr);
         assert(new_ptr == NULL);
         return new_ptr;
     }
 
-    if (new_ptr == NULL) 
+    if (unlikely(new_ptr == NULL)) 
         return new_ptr;
 
-    record_free(ptr);
-    record_alloc(new_ptr, size);
+    if (likely(new_ptr != ptr)) {
+        record_free(ptr);
+        record_alloc(new_ptr, size);
+    } else {
+        record_update(ptr, size);
+    }
     return new_ptr;
 }
