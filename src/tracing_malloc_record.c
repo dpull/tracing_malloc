@@ -63,7 +63,7 @@ static void _backup_proc_maps()
             break;
 
         int bytes_write_len = fwrite(file_name_buffer, bytes_read_len, 1, dst);
-        if (bytes_read_len != 1)
+        if (bytes_write_len != 1)
             break;
 	}
     
@@ -119,7 +119,7 @@ static inline int _record_alloc(int add_flag, void* ptr, size_t size)
 
     hashmap_value->alloc_time = (int64_t)time(NULL);
     hashmap_value->alloc_size = size;
-    memcpy(buffer + STACK_TRACE_SKIP, hashmap_value->address, sizeof(hashmap_value->address));
+    memcpy(hashmap_value->address, buffer + STACK_TRACE_SKIP, sizeof(hashmap_value->address));
 }
 
 int record_alloc(void* ptr, size_t size)
