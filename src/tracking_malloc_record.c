@@ -41,6 +41,40 @@ int record_init()
     return ret;
 }
 
+static void _backup_proc_maps()
+{
+    pid_t pid = getpid();
+    FILE* src = NULL;
+    FILE* dst = NULL;
+    char file_name_buffer[FILENAME_MAX];
+
+    sprintf(file_name_buffer, "/proc/%d/maps", pid);
+    src = fopen(file_name_buffer, "rb");
+
+    sprintf(file_name_buffer, "/tmp/%s.%d.maps", "tracking.malloc", pid);
+    dst = fopen(file_name_buffer, "wb");
+
+    if (!src || !dst) 
+        goto cleanup;
+
+    while (1)
+	{
+        int bytes_read_len = fread(file_name_buffer, 1, sizeof(file_name_buffer), src);
+        if (bytes_read_len <= 0)
+            break;
+
+        int bytes_write_len = fwrite(file_name_buffer, bytes_read_len, 1, dst);
+        if (bytes_read_len != 1)
+            break;
+	}
+    
+cleanup:
+    if (src)
+        fclose(src);
+    if (dst)
+        fclose(dst);
+}
+
 static int _record_debug(struct hashmap_value* hashmap_value) 
 {
     printf("ptr:%p, size:%lld\n", (void*)hashmap_value->pointer, hashmap_value->alloc_size);
@@ -53,6 +87,7 @@ static inline void _record_uninit()
     /* 
     hashmap_traverse(g_record.hashmap, _record_debug); 
     */
+    _backup_proc_maps();
     hashmap_destory(g_record.hashmap);
     g_record.hashmap = NULL;
     g_record.pid = 0;
