@@ -1,6 +1,7 @@
 #include "tracing_malloc_hashmap.h"
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <fcntl.h>
@@ -33,6 +34,17 @@ static void* filemapping_create_readwrite(const char* file, size_t length)
 	return data != MAP_FAILED ? data : NULL;
 }
 
+static void check_pointer(struct hashmap_value* pointer)
+{
+    _Static_assert(sizeof(int64_t) == sizeof(void*), "sizeof(int64_t) == sizeof(void*)");
+
+    int pagesize = getpagesize();
+    if ((pagesize % sizeof(pointer[0])) != 0)
+        abort();
+    if (((intptr_t)pointer % pagesize) != 0)
+        abort();     
+}
+
 struct hashmap* hashmap_create(const char* file, size_t value_max_count) 
 {
     size_t length = value_max_count * sizeof(struct hashmap_value);
@@ -43,6 +55,7 @@ struct hashmap* hashmap_create(const char* file, size_t value_max_count)
     if (!hashmap_value)
         return NULL;
 
+    check_pointer(hashmap_value);
     memset(hashmap_value, 0, length);
 
     struct hashmap* hashmap = (struct hashmap*)sys_malloc(sizeof(*hashmap));

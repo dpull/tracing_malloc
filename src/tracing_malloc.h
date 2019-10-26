@@ -16,6 +16,9 @@ extern "C" {
 #define STACK_RECORD_INTERVAL_SEC       (120)  
 #define STACK_RECORD_OPT_QUEUE_RESERVE  (1024 * 128)  
 
+#define likely(x)    __builtin_expect(!!(x), 1)
+#define unlikely(x)  __builtin_expect(!!(x), 0)
+
 void* sys_malloc(size_t size);
 void sys_free(void* ptr);
 

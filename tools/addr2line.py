@@ -8,7 +8,7 @@ import struct
 
 def load_bin_file(file_path):
     file = open(file_path, 'rb')
-    fmt = '=qqqq28q' # ptr, time, size, meta, stack
+    fmt = '=qqqq28q' # ptr, time, size, reserve, stack
     size = struct.calcsize(fmt)
     data = []
     while True:
@@ -22,7 +22,7 @@ def load_bin_file(file_path):
                 if value != 0:
                     index = len(unpack_data) - index
                     break
-            line_data = {'ptr' : unpack_data[0], 'time' : unpack_data[1], 'size' : unpack_data[2], 'meta' : unpack_data[3], 'stack' : unpack_data[4:index]}
+            line_data = {'ptr' : unpack_data[0], 'time' : unpack_data[1], 'size' : unpack_data[2], 'stack' : unpack_data[4:index]}
             data.append(line_data)
             print('load_bin_file', line_data)
     return data
@@ -30,7 +30,7 @@ def load_bin_file(file_path):
 def save_file(file_path, data):
     file = open(file_path, 'w')
     for item in data:
-        file.write('time:{0}\tsize:{1}\tptr:0x{2:x}\tmeta:{3}\n'.format(item['time'], item['size'], item['ptr'], item['meta']))
+        file.write('time:{0}\tsize:{1}\tptr:0x{2:x}\n'.format(item['time'], item['size'], item['ptr']))
         for frame in item['stack_line']:
             file.write('{0}\n'.format(frame))
         file.write('========\n\n')

@@ -57,8 +57,7 @@ static void _backup_proc_maps()
     if (!src || !dst) 
         goto cleanup;
 
-    while (1)
-	{
+    while (1) {
         int bytes_read_len = fread(file_name_buffer, 1, sizeof(file_name_buffer), src);
         if (bytes_read_len <= 0)
             break;
@@ -103,31 +102,29 @@ void record_uninit()
 __attribute__((always_inline)) 
 static inline int _record_alloc(int add_flag, void* ptr, size_t size) 
 {
-    void* buffer[STACK_TRACE_DEPTH + STACK_TRACE_SKIP];
+    struct hashmap_value* hashmap_value;
+    void* buffer[sizeof(hashmap_value->address) / sizeof(hashmap_value->address[0]) + STACK_TRACE_SKIP];
     memset(buffer, 0, sizeof(buffer));
     int count = stack_backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]), STACK_TRACE_SKIP); 
-    if (count < STACK_TRACE_SKIP)
+    if (unlikely(count < STACK_TRACE_SKIP))
         return -1;
 
-    struct hashmap_value* hashmap_value;
-    if (add_flag)
+    if (likely(add_flag))
         hashmap_value = hashmap_add(g_record.hashmap, (intptr_t)ptr);
     else
         hashmap_value = hashmap_get(g_record.hashmap, (intptr_t)ptr);
 
-    if (!hashmap_value)
+    if (unlikely(!hashmap_value))
         return -2;
 
     hashmap_value->alloc_time = (int64_t)time(NULL);
     hashmap_value->alloc_size = size;
-    for (int i = 0; i < STACK_TRACE_DEPTH; ++i) {
-        hashmap_value->address[i] = (int64_t)buffer[i + STACK_TRACE_SKIP];
-    }
+    memcpy(buffer + STACK_TRACE_SKIP, hashmap_value->address, sizeof(hashmap_value->address));
 }
 
 int record_alloc(void* ptr, size_t size)
 {
-    if (!ptr || record_disable_flag)
+    if (unlikely(!ptr || record_disable_flag))
         return -3;
 
     record_disable_flag = 1;
@@ -138,7 +135,7 @@ int record_alloc(void* ptr, size_t size)
 
 int record_free(void* ptr)
 {
-    if (!ptr || record_disable_flag)
+    if (unlikely(!ptr || record_disable_flag))
         return -3;
 
     record_disable_flag = 1;
