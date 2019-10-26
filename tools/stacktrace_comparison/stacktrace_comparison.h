@@ -2,12 +2,15 @@
 #include "stacktrace.h"
 
 enum comparison_type {
-    comparison_type_current,
+    comparison_type_backtrace_dladdr,
     comparison_type_backtrace,
     comparison_type_boost_stacktrace,
+    comparison_type_gcc_unwind,
     comparison_type_libunwind,
     comparison_type_total,
 };
+
+void set_comparison_type(comparison_type type);
 
 class stacktrace_comparison : public stacktrace {
 public:

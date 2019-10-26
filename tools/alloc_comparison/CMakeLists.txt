@@ -4,28 +4,16 @@ set(CMAKE_SUPPRESS_REGENERATION TRUE CACHE BOOL "Disable Zero Check Project")
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD 11)
 
-set(PROJ_NAME "stacktrace_comparison")
+set(PROJ_NAME "alloc_comparison")
 project(${PROJ_NAME})
 
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
    add_definitions(-D_DEBUG)
 endif()
 
-# set(USE_LIBUNWIND true)
-
-if(USE_LIBUNWIND)
-    add_definitions(-DUSE_LIBUNWIND) 
-endif(USE_LIBUNWIND)
-
 aux_source_directory(. PROJ_SRC)
 
 add_executable(${PROJ_NAME} ${PROJ_SRC})
-set_target_properties(${PROJ_NAME} PROPERTIES LINK_FLAGS -rdynamic)
-target_link_libraries(${PROJ_NAME} dl)
-
-if(USE_LIBUNWIND) 
-    target_link_libraries(${PROJ_NAME} unwind.a)
-endif(USE_LIBUNWIND)
 
 message(STATUS *******************************************************)
 message(STATUS CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME})
