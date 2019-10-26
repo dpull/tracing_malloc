@@ -12,11 +12,21 @@ if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
    add_definitions(-D_DEBUG)
 endif()
 
+set(USE_LIBUNWIND true)
+if(USE_LIBUNWIND)
+    add_definitions(-DUSE_LIBUNWIND) 
+endif(USE_LIBUNWIND)
+
 aux_source_directory(. PROJ_SRC)
 
 add_library(${PROJ_NAME} SHARED ${PROJ_SRC})
 target_link_libraries(${PROJ_NAME} dl)
 target_link_libraries(${PROJ_NAME} pthread)
+
+if(USE_LIBUNWIND) 
+    target_link_libraries(${PROJ_NAME} /data/home/archerdchen/tmp/libunwind/src/.libs/libunwind.a)
+#    target_link_libraries(${PROJ_NAME} unwind.a)
+endif(USE_LIBUNWIND)
 
 message(STATUS *******************************************************)
 message(STATUS CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME})

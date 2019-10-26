@@ -1,50 +1,62 @@
-#include "tracking_malloc_stacktrace.h"
 #include "tracking_malloc.h"
-#include <execinfo.h>
+#include "tracking_malloc_record.h"
+#include "tracking_malloc_hashmap.h"
+#include <stdio.h>
 #include <string.h>
+#include <time.h>
+#include <assert.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <execinfo.h>
+#include <unwind.h>
 
-struct stacktrace* stacktrace_create(int skip, int max_depth)
+#ifdef USE_LIBUNWIND
+
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
+__attribute__((always_inline))
+static inline int stacktrace_fast(void** buffer, int size, int skip) 
 {
-    if (skip < 0 || max_depth <= 0)
-        return NULL;
-
-    int size = skip + max_depth;
-
-    
-    void* buffer[size];
-    int count = backtrace(buffer, size);
-    count -= skip;
-    if (count <= 0)
-        return NULL;
-
-    size_t stacktrace_size = sizeof(struct stacktrace) + sizeof(struct stacktrace_frame) * count;
-    struct stacktrace* stacktrace = (struct stacktrace*)sys_malloc(stacktrace_size);
-    if (!stacktrace)
-        return NULL;
-
-    memset(stacktrace, 0, stacktrace_size);
-
-    stacktrace->count = count;
-    for (int i = 0; i < count; ++i) {
-        stacktrace->frames[i].address = buffer[i + skip];
-    }
-    return stacktrace;
+    return unw_backtrace(buffer, size);
 }
 
-void stacktrace_analysis(struct stacktrace* stacktrace, fn_cache_fname* cache_fname) 
-{
-    Dl_info dli;
-    for (int i = 0; i < stacktrace->count; ++i) {
-        struct stacktrace_frame* frame = stacktrace->frames + i;
-        if (dladdr(frame->address, &dli) == 0)
-            continue;
+#endif // USE_LIBUNWIND
 
-        frame->fbase = dli.dli_fbase;
-        frame->fname = cache_fname ? cache_fname(dli.dli_fbase, dli.dli_fname) : dli.dli_fname;
+struct libgcc_backtrace_data {
+    int skip;
+    void** pos;
+    void** end;
+};
+
+static _Unwind_Reason_Code libgcc_backtrace_callback(struct _Unwind_Context* ctx, void* _data) 
+{
+    struct libgcc_backtrace_data* data = (struct libgcc_backtrace_data*)_data;
+    if (data->skip > 0) {
+        data->skip--;
+        return _URC_NO_REASON;
     }
+
+    void* ip = (void*)_Unwind_GetIP(ctx);
+    *(data->pos++) = ip;
+    return (ip && data->pos < data->end) ? _URC_NO_REASON : _URC_END_OF_STACK;
 }
 
-void stacktrace_destroy(struct stacktrace* stacktrace)
+__attribute__((always_inline))
+static inline int stacktrace_slow(void** buffer, int size, int skip) 
 {
-    sys_free(stacktrace);
+    struct libgcc_backtrace_data data;
+    data.skip = skip;
+    data.pos = buffer + skip;
+    data.end = buffer + size;
+    _Unwind_Backtrace(libgcc_backtrace_callback, &data);
+    return data.pos - buffer;
+}
+
+int stack_backtrace(void** buffer, int size, int skip) 
+{
+#ifdef USE_LIBUNWIND
+    return stacktrace_fast(buffer, size, skip);
+#else
+    return stacktrace_slow(buffer, size, skip);
+#endif // USE_LIBUNWIND
 }
