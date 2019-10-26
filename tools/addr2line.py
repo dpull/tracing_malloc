@@ -94,7 +94,7 @@ def load_maps(file_path):
     return data
 
 def main():
-    parser = argparse.ArgumentParser(description='tracking malloc addr2line.')
+    parser = argparse.ArgumentParser(description='tracing malloc addr2line.')
     parser.add_argument('files', metavar = 'N', type = str, nargs = '+', help='files')
     parser.add_argument('--maps', dest='maps', type = str, help='cache file of /proc/$PID/maps')
 

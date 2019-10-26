@@ -25,7 +25,7 @@ def _major_formatter(x, pos):
 class Application(tkinter.Frame):    
     def __init__(self, master = None):
         tkinter.Frame.__init__(self, master)   
-        self.master.title('Tracking malloc')    
+        self.master.title('tracing malloc')    
         self.master.state("zoomed")
         self.__createWidgets()
         self.__cmdDispatcher = {}

@@ -22,7 +22,7 @@ static inline int _record_init()
 {
     pid_t pid =  getpid();
     char file_name[FILENAME_MAX];
-    sprintf(file_name, "/tmp/%s.%d", "tracking.malloc", pid);
+    sprintf(file_name, "/tmp/%s.%d", "tracing.malloc", pid);
     struct hashmap* hashmap = hashmap_create(file_name, 1024 * 1024);
 
     if (!hashmap)
@@ -51,7 +51,7 @@ static void _backup_proc_maps()
     sprintf(file_name_buffer, "/proc/%d/maps", pid);
     src = fopen(file_name_buffer, "rb");
 
-    sprintf(file_name_buffer, "/tmp/%s.%d.maps", "tracking.malloc", pid);
+    sprintf(file_name_buffer, "/tmp/%s.%d.maps", "tracing.malloc", pid);
     dst = fopen(file_name_buffer, "wb");
 
     if (!src || !dst) 
