@@ -9,6 +9,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#define PARAMETER_ERROR     (-1)
+#define ALLOC_FAILED        (-2)
+#define BACKTRACE_FAILED    (-3)
+
 struct record_data {
     struct hashmap* hashmap;
     pid_t pid;
@@ -22,11 +26,19 @@ static inline int _record_init()
 {
     pid_t pid =  getpid();
     char file_name[FILENAME_MAX];
+
+    if (g_record.hashmap) {
+        assert(g_record.pid != 0 && g_record.pid != pid);
+        hashmap_destory(g_record.hashmap);
+        g_record.hashmap = NULL;
+        g_record.pid = 0;
+    }
+
     sprintf(file_name, "/tmp/%s.%d", "tracing.malloc", pid);
     struct hashmap* hashmap = hashmap_create(file_name, 1024 * 1024);
 
     if (!hashmap)
-        return -1;
+        return ALLOC_FAILED;
 
     g_record.hashmap = hashmap;
     g_record.pid = pid;
@@ -107,7 +119,7 @@ static inline int _record_alloc(int add_flag, void* ptr, size_t size)
     memset(buffer, 0, sizeof(buffer));
     int count = stack_backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]), STACK_TRACE_SKIP); 
     if (unlikely(count < STACK_TRACE_SKIP))
-        return -1;
+        return BACKTRACE_FAILED;
 
     if (likely(add_flag))
         hashmap_value = hashmap_add(g_record.hashmap, (intptr_t)ptr);
@@ -115,17 +127,18 @@ static inline int _record_alloc(int add_flag, void* ptr, size_t size)
         hashmap_value = hashmap_get(g_record.hashmap, (intptr_t)ptr);
 
     if (unlikely(!hashmap_value))
-        return -2;
+        return ALLOC_FAILED;
 
     hashmap_value->alloc_time = (int64_t)time(NULL);
     hashmap_value->alloc_size = size;
     memcpy(hashmap_value->address, buffer + STACK_TRACE_SKIP, sizeof(hashmap_value->address));
+    return 0;
 }
 
 int record_alloc(void* ptr, size_t size)
 {
     if (unlikely(!ptr || record_disable_flag))
-        return -3;
+        return PARAMETER_ERROR;
 
     record_disable_flag = 1;
     int ret = _record_alloc(1, ptr, size);
@@ -136,16 +149,19 @@ int record_alloc(void* ptr, size_t size)
 int record_free(void* ptr)
 {
     if (unlikely(!ptr || record_disable_flag))
-        return -3;
+        return PARAMETER_ERROR;
 
     record_disable_flag = 1;
-    hashmap_remove(g_record.hashmap, (intptr_t)ptr);
+    int ret = hashmap_remove(g_record.hashmap, (intptr_t)ptr);
     record_disable_flag = 0;
-    return 0;
+    return ret;
 }
 
 int record_update(void* ptr, size_t new_size)
 {
+    if (unlikely(record_disable_flag))
+        return PARAMETER_ERROR;
+
     record_disable_flag = 1;
     int ret = _record_alloc(0, ptr, new_size);
     record_disable_flag = 0;

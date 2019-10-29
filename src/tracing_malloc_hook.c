@@ -13,6 +13,7 @@ static void* (*g_sys_malloc)(size_t size) = NULL;
 static void(*g_sys_free)(void *ptr) = NULL;
 static void* (*g_sys_calloc)(size_t nmemb, size_t size) = NULL;
 static void* (*g_sys_realloc)(void *ptr, size_t size) = NULL;
+static pid_t (*g_sys_fork)(void) = NULL;
 
 static void* internal_malloc(size_t size)
 {
@@ -47,8 +48,9 @@ static void init(void)
     g_sys_free = dlsym(RTLD_NEXT, "free");
     g_sys_calloc = dlsym(RTLD_NEXT, "calloc");
     g_sys_realloc = dlsym(RTLD_NEXT, "realloc");
+    g_sys_fork  = dlsym(RTLD_NEXT, "fork");
 
-    if (!g_sys_malloc || !g_sys_calloc || !g_sys_realloc || !g_sys_free)
+    if (!g_sys_malloc || !g_sys_calloc || !g_sys_realloc || !g_sys_free || !g_sys_fork)
         abort();
 
     if (record_init())
@@ -131,4 +133,12 @@ void* realloc(void* ptr, size_t size)
         record_update(ptr, size);
     }
     return new_ptr;
+}
+
+pid_t fork(void)
+{
+	pid_t pid = g_sys_fork();
+	if (pid == 0)
+        record_init();
+	return pid;
 }

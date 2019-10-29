@@ -9,7 +9,8 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-#define HASHMAP_SENTINEL (-1)
+#define HASHMAP_NULL        (0)
+#define HASHMAP_SENTINEL    (-1)
 
 struct hashmap {
     struct hashmap_value* hashmap_value;
@@ -34,7 +35,7 @@ static void* filemapping_create_readwrite(const char* file, size_t length)
 	return data != MAP_FAILED ? data : NULL;
 }
 
-static void check_pointer(struct hashmap_value* pointer)
+static void check_system_supports(struct hashmap_value* pointer)
 {
     _Static_assert(sizeof(int64_t) == sizeof(void*), "sizeof(int64_t) == sizeof(void*)");
 
@@ -55,8 +56,8 @@ struct hashmap* hashmap_create(const char* file, size_t value_max_count)
     if (!hashmap_value)
         return NULL;
 
-    check_pointer(hashmap_value);
-    memset(hashmap_value, 0, length);
+    check_system_supports(hashmap_value);
+    memset(hashmap_value, HASHMAP_NULL, length);
 
     struct hashmap* hashmap = (struct hashmap*)sys_malloc(sizeof(*hashmap));
     hashmap->hashmap_value = hashmap_value;
@@ -87,7 +88,7 @@ struct hashmap_value* hashmap_add(struct hashmap* hashmap, intptr_t pointer)
 
     for(size_t i = 0; i < hashmap->max_count; i++) {
         struct hashmap_value* hashmap_value = hashmap->hashmap_value + index;
-        if (hashmap_value->pointer == 0 || hashmap_value->pointer == HASHMAP_SENTINEL) {
+        if (hashmap_value->pointer == HASHMAP_NULL || hashmap_value->pointer == HASHMAP_SENTINEL) {
             hashmap_value->pointer = pointer;
 
             pthread_mutex_unlock(&hashmap->mutex);
@@ -109,7 +110,7 @@ struct hashmap_value* hashmap_get(struct hashmap* hashmap, intptr_t pointer)
         if (hashmap_value->pointer == pointer) 
             return hashmap_value;
 
-        if (hashmap_value->pointer == 0) 
+        if (hashmap_value->pointer == HASHMAP_NULL) 
             break;
 
         index = (index + 1) % max_count;
@@ -134,7 +135,7 @@ void hashmap_traverse(struct hashmap* hashmap, hashmap_callback* callback)
 {
       for(size_t i = 0; i < hashmap->max_count; i++) {
         struct hashmap_value* hashmap_value = hashmap->hashmap_value + i;
-        if (hashmap_value->pointer == 0 || hashmap_value->pointer == HASHMAP_SENTINEL)
+        if (hashmap_value->pointer == HASHMAP_NULL || hashmap_value->pointer == HASHMAP_SENTINEL)
             continue;
         if (callback(hashmap_value))
             break;
