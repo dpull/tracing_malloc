@@ -21,18 +21,18 @@ struct hashmap {
 
 static void* filemapping_create_readwrite(const char* file, size_t length)
 {
-	int fd = open(file, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-	if (fd == -1)
-		return NULL;
+    int fd = open(file, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+    if (fd == -1)
+        return NULL;
 
     if (ftruncate(fd, length) != 0) {
         close(fd);
         return NULL;
     }
 
-	void* data = mmap(0, length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0); 
+    void* data = mmap(0, length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0); 
     close(fd);
-	return data != MAP_FAILED ? data : NULL;
+    return data != MAP_FAILED ? data : NULL;
 }
 
 static void check_system_supports(struct hashmap_value* pointer)

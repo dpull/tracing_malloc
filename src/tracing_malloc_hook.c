@@ -142,8 +142,8 @@ void* realloc(void* ptr, size_t size)
 __attribute__ ((visibility ("default")))
 pid_t fork(void)
 {
-	pid_t pid = g_sys_fork();
-	if (pid == 0)
+    pid_t pid = g_sys_fork();
+    if (pid == 0)
         record_init();
-	return pid;
+    return pid;
 }

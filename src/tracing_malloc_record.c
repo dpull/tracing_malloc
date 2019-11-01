@@ -77,7 +77,7 @@ static void _backup_proc_maps()
         int bytes_write_len = fwrite(file_name_buffer, bytes_read_len, 1, dst);
         if (bytes_write_len != 1)
             break;
-	}
+    }
     
 cleanup:
     if (src)
