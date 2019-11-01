@@ -18,7 +18,7 @@ struct record_data {
     pid_t pid;
 };
 
-struct record_data g_record = {NULL, 0};
+static struct record_data g_record = {NULL, 0};
 __thread int record_disable_flag = 0;
 
 __attribute__((always_inline)) 

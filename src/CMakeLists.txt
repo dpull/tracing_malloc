@@ -12,6 +12,8 @@ if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
    add_definitions(-D_DEBUG)
 endif()
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -fvisibility=hidden -Wl,--exclude-libs=ALL -ffunction-sections")
+
 set(USE_LIBUNWIND true)
 if(USE_LIBUNWIND)
     add_definitions(-DUSE_LIBUNWIND) 

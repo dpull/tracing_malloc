@@ -73,6 +73,7 @@ void sys_free(void* ptr)
     g_sys_free(ptr);
 }
 
+__attribute__ ((visibility ("default")))
 void* malloc(size_t size)
 {
     if (unlikely(!g_sys_malloc))
@@ -83,6 +84,7 @@ void* malloc(size_t size)
     return ptr;
 }
 
+__attribute__ ((visibility ("default")))
 void free(void* ptr)
 {
     if (unlikely(is_internal_malloc(ptr)))
@@ -91,6 +93,7 @@ void free(void* ptr)
     record_free(ptr);
 }
 
+__attribute__ ((visibility ("default")))
 void* calloc(size_t nmemb, size_t size)
 {
     if (unlikely(!g_sys_calloc)) {
@@ -105,6 +108,7 @@ void* calloc(size_t nmemb, size_t size)
     return ptr;
 }
 
+__attribute__ ((visibility ("default")))
 void* realloc(void* ptr, size_t size)
 {
     if (unlikely(is_internal_malloc(ptr))) {
@@ -135,6 +139,7 @@ void* realloc(void* ptr, size_t size)
     return new_ptr;
 }
 
+__attribute__ ((visibility ("default")))
 pid_t fork(void)
 {
 	pid_t pid = g_sys_fork();
