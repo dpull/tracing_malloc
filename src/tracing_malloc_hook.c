@@ -18,7 +18,6 @@ static void* (*g_sys_aligned_alloc)(size_t alignment, size_t size) = NULL;
 static pid_t (*g_sys_fork)(void) = NULL;
 
 /* Round "value" up to next "alignment" boundary. Requires that "alignment" be a power of two. */
-__attribute__((always_inline)) 
 static inline intptr_t round_up(intptr_t value, intptr_t alignment) 
 {
     return (value + alignment - 1) & ~(alignment - 1);
@@ -54,19 +53,24 @@ static int is_internal_malloc(void* ptr)
     return (char*)ptr >= internal_malloc_buffer && (char*)ptr < internal_malloc_buffer_end;
 }
 
+static inline void* get_address(const char* symbol) 
+{
+    void* address = dlsym(RTLD_NEXT, symbol);
+    if (!address)
+        abort();
+    return address;
+}
+
 __attribute__((constructor))
 static void init(void)
 {
-    g_sys_malloc = dlsym(RTLD_NEXT, "malloc");
-    g_sys_free = dlsym(RTLD_NEXT, "free");
-    g_sys_calloc = dlsym(RTLD_NEXT, "calloc");
-    g_sys_realloc = dlsym(RTLD_NEXT, "realloc");
-    g_sys_posix_memalign = dlsym(RTLD_NEXT, "posix_memalign");
-    g_sys_aligned_alloc = dlsym(RTLD_NEXT, "aligned_alloc");
-    g_sys_fork  = dlsym(RTLD_NEXT, "fork");
-
-    if (!g_sys_malloc || !g_sys_free || !g_sys_calloc || !g_sys_realloc || !g_sys_posix_memalign || !g_sys_aligned_alloc || !g_sys_fork)
-        abort();
+    g_sys_malloc = get_address("malloc");
+    g_sys_free = get_address("free");
+    g_sys_calloc = get_address("calloc");
+    g_sys_realloc = get_address("realloc");
+    g_sys_posix_memalign = get_address("posix_memalign");
+    g_sys_aligned_alloc = get_address("aligned_alloc");
+    g_sys_fork  = get_address("fork");
 
     if (record_init())
         abort();
