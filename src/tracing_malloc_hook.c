@@ -171,7 +171,7 @@ int posix_memalign(void** memptr, size_t alignment, size_t size)
 
     int ret = g_sys_posix_memalign(memptr, alignment, size);
     if (likely(ret == 0)) 
-        record_alloc(memptr, size);
+        record_alloc(*memptr, size);
     return ret;
 }
 

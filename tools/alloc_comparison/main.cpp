@@ -7,14 +7,20 @@ int times = 0;
 int loop = 0;
 int leak = 0;
 std::vector<char*> buffer_array;
+std::vector<char*> leak_array;
 
-void myfunc3(void)
+void myfunc3()
 {
     for (auto i = 0; i < loop; ++i) {
-        char* p = new char[i + 1];
-        buffer_array.push_back(p);
+        void* p = NULL;
+        if (posix_memalign(&p, 16, i))
+            continue;
+            
+        buffer_array.push_back((char*)p);
         if (i % leak)
-            delete[] p;
+            free(p);
+        else
+            leak_array.push_back((char*)p);
     }
 }
 
@@ -48,6 +54,6 @@ int main(int argc, char *argv[])
     }
     auto end = std::chrono::system_clock::now();
     auto cost_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    printf("cost_time:%f s\tmalloc count:%lld\n", (float)cost_time.count() / 1000000, (long long)buffer_array.size());
+    printf("cost_time:%f s\talloc count:%lld\tleak count:%lld\n", (float)cost_time.count() / 1000000, (long long)buffer_array.size(), (long long)leak_array.size());
     return 0;
 }
