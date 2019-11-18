@@ -35,6 +35,11 @@ def save_file(file_path, data):
             file.write('{0}\n'.format(frame))
         file.write('========\n\n')
 
+def to_string(str_or_bytes): # compatible with Python2 and Python3. 
+    if type(str_or_bytes) != str:
+        str_or_bytes = str_or_bytes.decode('utf-8')
+    return str_or_bytes
+
 _addr2line_cache = {}
 def addr2line(address, fbase, fname):
     if fbase == '(nil)':
@@ -51,8 +56,8 @@ def addr2line(address, fbase, fname):
 
     pcmd = 'addr2line -f -s -C -e {0} 0x{1:x}'.format(fname, address_i)
     p = subprocess.Popen(pcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    function = p.stdout.readline().rstrip('\n')
-    file = p.stdout.readline().rstrip('\n')
+    function = to_string(p.stdout.readline()).rstrip('\n')
+    file = to_string(p.stdout.readline()).rstrip('\n')
     line = "{0}\t{1}\t{2}".format(function, file, fname)
 
     _addr2line_cache[address] = {'fbase':fbase, 'fname':fname, 'line':line}

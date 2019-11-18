@@ -1,16 +1,23 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "stacktrace_comparison.h"
+#include "stacktrace_misc.h"
 
+stacktrace_type type;
 int disable_output_flag = 0;
+long long collect_cost = 0;
+long long analysis_cost = 0;
 
 int compare_func(const void* element1, const void* element2)
 {
-    auto comparison = new stacktrace_comparison();
-    comparison->collect();
-    comparison->analysis();
-    if (!disable_output_flag) {
-        comparison->output(stdout);
+    auto impl = create(type);
+    if (impl) {
+        collect_cost += cost_time_us([impl]{impl->collect();});
+        analysis_cost += cost_time_us([impl]{impl->analysis();});
+
+        if (!disable_output_flag) {
+            impl->output(stdout);
+        }
+        delete impl;
     }
     return (*(int*)element1) - (*(int*)element2);
 }
@@ -41,14 +48,13 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    auto stacktrace_type = atoi(argv[1]);
+    type = (stacktrace_type)atoi(argv[1]);
     auto num_calls = atoi(argv[2]);
     disable_output_flag = num_calls > 1;
 
-    set_comparison_type((comparison_type)stacktrace_type);
     for (auto ncalls = 0; ncalls < num_calls; ++ncalls) 
         myfunc(ncalls);
 
-    stacktrace_comparison::output_comparison(stderr);
+    fprintf(stdout, "%d\tcollect_cost:[%lld]µs\tanalysis_cost:[%lld]µs\n", (int)type, collect_cost, analysis_cost);
     return 0;
 }
