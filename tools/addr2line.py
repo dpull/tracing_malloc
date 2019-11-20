@@ -98,7 +98,7 @@ def load_maps(file_path):
     with open(file_path, 'r') as fd:
         maps = map(_extract_maps, fd.readlines())
     data = filter(lambda x : x['perms'] == 'r-xp', maps)
-    return data
+    return list(data)
 
 def main():
     parser = argparse.ArgumentParser(description='tracing malloc addr2line.')

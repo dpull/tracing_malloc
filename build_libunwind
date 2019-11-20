@@ -3,7 +3,7 @@
 libunwind=./libunwind-master
 if [ ! -d "${libunwind}" ]
 then
-    wget -O libunwind-master.zip https://github.com/libunwind/libunwind/archive/master.zip
+    wget -O libunwind-master.zip https://github.com/libunwind/libunwind/archive/v1.3.1.zip
     unzip libunwind-master.zip
 fi
 cd ${libunwind}
