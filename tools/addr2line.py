@@ -54,7 +54,7 @@ def addr2line(address, fbase, fname):
     if fbase != 0x400000:
         address_i = address - fbase
 
-    pcmd = 'addr2line -f -s -C -e {0} 0x{1:x}'.format(fname, address_i)
+    pcmd = 'addr2line -Cfse {0} 0x{1:x}'.format(fname, address_i)
     p = subprocess.Popen(pcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     function = to_string(p.stdout.readline()).rstrip('\n')
     file = to_string(p.stdout.readline()).rstrip('\n')
