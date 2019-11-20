@@ -60,9 +60,7 @@ static void _backup_proc_maps()
     FILE* dst = NULL;
     char file_name_buffer[FILENAME_MAX];
 
-    sprintf(file_name_buffer, "/proc/%d/maps", pid);
-    src = fopen(file_name_buffer, "rb");
-
+    src = fopen("/proc/self/maps", "rb");
     sprintf(file_name_buffer, "/tmp/%s.%d.maps", "tracing.malloc", pid);
     dst = fopen(file_name_buffer, "wb");
 

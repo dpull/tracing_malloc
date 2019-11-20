@@ -8,37 +8,46 @@ import argparse
 import struct
 
 def load_bin_file(file_path):
-    file = open(file_path, 'rb')
-    fmt = '=qqqq28q' # ptr, time, size, reserve, stack
-    size = struct.calcsize(fmt)
-    data = []
-    while True:
-        line = file.read(size)
-        if not line:
-            break
-        assert(len(line) == size)
-        unpack_data = struct.unpack(fmt, line)
-        if unpack_data[0] != 0 and unpack_data[0] != -1:
-            for index, value in enumerate(reversed(unpack_data)):
-                if value != 0:
-                    index = len(unpack_data) - index
-                    break
-            line_data = {'ptr' : unpack_data[0], 'time' : unpack_data[1], 'size' : unpack_data[2], 'stack' : unpack_data[4:index]}
-            data.append(line_data)
-    return data
+    with open(file_path, 'rb') as file:
+        fmt = '=qqqq28q' # ptr, time, size, reserve, stack
+        size = struct.calcsize(fmt)
+        data = []
+        while True:
+            line = file.read(size)
+            if not line:
+                break
+            assert(len(line) == size)
+            unpack_data = struct.unpack(fmt, line)
+            if unpack_data[0] != 0 and unpack_data[0] != -1:
+                for index, value in enumerate(reversed(unpack_data)):
+                    if value != 0:
+                        index = len(unpack_data) - index
+                        break
+                line_data = {'ptr' : unpack_data[0], 'time' : unpack_data[1], 'size' : unpack_data[2], 'stack' : unpack_data[4:index]}
+                data.append(line_data)
+        return data
 
 def save_file(file_path, data):
-    file = open(file_path, 'w')
-    for item in data:
-        file.write('time:{0}\tsize:{1}\tptr:0x{2:x}\n'.format(item['time'], item['size'], item['ptr']))
-        for frame in item['stack_line']:
-            file.write('{0}\n'.format(frame))
-        file.write('========\n\n')
+    with open(file_path, 'w') as file:
+        for item in data:
+            file.write('time:{0}\tsize:{1}\tptr:0x{2:x}\n'.format(item['time'], item['size'], item['ptr']))
+            for frame in item['stack_line']:
+                file.write('{0}\n'.format(frame))
+            file.write('========\n\n')
 
 def to_string(str_or_bytes): # compatible with Python2 and Python3. 
     if type(str_or_bytes) != str:
         str_or_bytes = str_or_bytes.decode('utf-8')
     return str_or_bytes
+
+_is_shared_object_cache = {}
+def is_shared_object(file_path):
+    if file_path not in _is_shared_object_cache: 
+        with open(file_path, 'rb') as elf:
+            elf.seek(16) # ei_ident
+            ei_type = struct.unpack('H', elf.read(2))[0]
+            _is_shared_object_cache[file_path] = ei_type == 3
+    return _is_shared_object_cache[file_path]
 
 _addr2line_cache = {}
 def addr2line(address, fbase, fname):
@@ -51,7 +60,7 @@ def addr2line(address, fbase, fname):
             return cache_line['line']
 
     address_i = address
-    if fbase != 0x400000:
+    if is_shared_object(fname): 
         address_i = address - fbase
 
     pcmd = 'addr2line -Cfse {0} 0x{1:x}'.format(fname, address_i)
