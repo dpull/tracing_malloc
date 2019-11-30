@@ -72,7 +72,7 @@ def addr2line(address, fbase, fname):
     _addr2line_cache[address] = {'fbase':fbase, 'fname':fname, 'line':line}
     return line
 
-def load_data(file_path, maps):
+def load_data(file_path, maps, output_path):
     data = load_bin_file(file_path)
     data.sort(key = lambda x : x['time'])
 
@@ -86,7 +86,7 @@ def load_data(file_path, maps):
             stack_line.append(line)
         item['stack_line'] = stack_line
 
-    save_file('{0}.addr2line'.format(file_path), data)
+    save_file(output_path, data)
 
 def _extract_maps(line):
     try:
@@ -109,7 +109,11 @@ def load_maps(file_path):
     data = filter(lambda x : x['perms'] == 'r-xp', maps)
     return list(data)
 
-def main():
+def analyze(snapshot_path, maps_path, output_path):
+    maps = load_maps(maps_path)
+    load_data(snapshot_path, maps, output_path)
+
+def _main():
     parser = argparse.ArgumentParser(description='tracing malloc addr2line.')
     parser.add_argument('files', metavar = 'N', type = str, nargs = '+', help='files')
     parser.add_argument('--maps', dest='maps', type = str, help='cache file of /proc/$PID/maps')
@@ -118,7 +122,7 @@ def main():
     maps = load_maps(args.maps)
 
     for file_path in args.files:
-        load_data(file_path, maps)
+        load_data(file_path, maps, '{0}.addr2line'.format(file_path))
 
 if __name__ == '__main__':
-    main()
+    _main()
