@@ -135,7 +135,7 @@ static inline int _record_alloc(int add_flag, void* ptr, size_t size)
 
 int record_alloc(void* ptr, size_t size)
 {
-    if (unlikely(!ptr || record_disable_flag))
+    if (unlikely(!ptr || record_disable_flag || !g_record.hashmap))
         return PARAMETER_ERROR;
 
     record_disable_flag = 1;
@@ -146,7 +146,7 @@ int record_alloc(void* ptr, size_t size)
 
 int record_free(void* ptr)
 {
-    if (unlikely(!ptr || record_disable_flag))
+    if (unlikely(!ptr || record_disable_flag || !g_record.hashmap))
         return PARAMETER_ERROR;
 
     record_disable_flag = 1;
@@ -157,7 +157,7 @@ int record_free(void* ptr)
 
 int record_update(void* ptr, size_t new_size)
 {
-    if (unlikely(record_disable_flag))
+    if (unlikely(record_disable_flag || !g_record.hashmap))
         return PARAMETER_ERROR;
 
     record_disable_flag = 1;

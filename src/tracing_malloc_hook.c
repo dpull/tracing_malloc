@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <assert.h>
+#include <pthread.h>
 
 static char* internal_malloc_buffer = NULL;
 static char* internal_malloc_buffer_end = NULL;
@@ -15,7 +16,6 @@ static void* (*g_sys_calloc)(size_t nmemb, size_t size) = NULL;
 static void* (*g_sys_realloc)(void *ptr, size_t size) = NULL;
 static int (*g_sys_posix_memalign)(void** memptr, size_t alignment, size_t size) = NULL;
 static void* (*g_sys_aligned_alloc)(size_t alignment, size_t size) = NULL;
-static pid_t (*g_sys_fork)(void) = NULL;
 
 /* Round "value" up to next "alignment" boundary. Requires that "alignment" be a power of two. */
 static inline intptr_t round_up(intptr_t value, intptr_t alignment) 
@@ -61,6 +61,12 @@ static inline void* get_address(const char* symbol)
     return address;
 }
 
+static void atfork_child(void)
+{
+    /* todo copy files.*/
+    record_init(); 
+}
+
 __attribute__((constructor))
 static void init(void)
 {
@@ -70,7 +76,8 @@ static void init(void)
     g_sys_realloc = get_address("realloc");
     g_sys_posix_memalign = get_address("posix_memalign");
     g_sys_aligned_alloc = get_address("aligned_alloc");
-    g_sys_fork  = get_address("fork");
+
+    pthread_atfork(NULL, NULL, atfork_child);
 
     if (record_init())
         abort();
@@ -184,13 +191,4 @@ void* aligned_alloc(size_t alignment, size_t size)
     void* ptr = g_sys_aligned_alloc(alignment, size);
     record_alloc(ptr, size);
     return ptr;
-}
-
-__attribute__ ((visibility ("default")))
-pid_t fork(void)
-{
-    pid_t pid = g_sys_fork();
-    if (pid == 0)
-        record_init();
-    return pid;
 }
