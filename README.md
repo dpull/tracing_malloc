@@ -1,6 +1,6 @@
 # tracing_malloc
 
-## tracing_malloc is a memory analyzer and memory leak detector for Linux C/C++. It's very convenient to use:
+tracing_malloc is a memory analyzer and memory leak detector for Linux C/C++. It's very convenient to use:
 
 * No need to modify or recompile the target executable. It injects into the target process via LD_PRELOAD method to monitor memory allocation(such as malloc)
 * Low performance cost of collecting time-based memory activity data compared with valgrind and memloax. It can be used for large projects like Dedicated Server of UE4.
