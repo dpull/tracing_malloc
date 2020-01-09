@@ -26,3 +26,25 @@ After the process quits, a tracing.malloc.pid is generated, like tracing.malloc.
 ## How to analyze
 
 To see unfreed memory and its allocation time, use ${proj}/tools/allocation/main.py to open tracing.malloc.pid or tracing.malloc.pid.time.
+
+## Performance
+
+[ExamplePlugin](.\tools\ExamplePlugin\)
+
+* `time ./Example/Binaries/Linux/ExampleServer Example -ansimalloc` 
+
+    real    0m5.375s
+    user    0m0.760s
+    sys     0m0.212s
+
+* `time LD_PRELOAD=/tmp/libtracing_malloc.so ./Example/Binaries/Linux/ExampleServer Example -ansimalloc`
+
+    real    0m6.888s
+    user    0m1.868s
+    sys     0m0.740s
+
+* `time valgrind ./Example/Binaries/Linux/ExampleServer Example -ansimalloc`
+
+    real    0m53.204s
+    user    0m48.016s
+    sys     0m1.300s
