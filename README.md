@@ -29,7 +29,7 @@ To see unfreed memory and its allocation time, use ${proj}/tools/allocation/main
 
 ## Performance
 
-[ExamplePlugin](.\tools\ExamplePlugin\)
+[ExamplePlugin](./tools/ExamplePlugin)
 
 * `time ./Example/Binaries/Linux/ExampleServer Example -ansimalloc` 
 
