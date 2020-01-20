@@ -54,7 +54,7 @@ class DataSource:
     def __procData(self):
         self.data = {}
         for idx, item in enumerate(self.rawdata):
-            timeStr = datetime.datetime.fromtimestamp(item['time']).strftime('%H:%M')
+            timeStr = datetime.datetime.fromtimestamp(item['time']).strftime('%H:%M:%S')
             keyFrame = get_key_frame(item)
             self.data.setdefault(timeStr, dict(size = 0, keyFrame = {}))
 
