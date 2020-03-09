@@ -7,6 +7,59 @@ import subprocess
 import argparse
 import struct
 
+class Addr2Line:
+    def __init__(self):
+        self.__fbase_2_fname = {}
+        self.__fbase_2_addrset = {}
+        self.__is_shared_object_cache = {}
+        self.__address_2_line = {}
+
+    def add(self, address, fbase, fname):
+        self.__fbase_2_fname[fbase] = fname
+        self.__fbase_2_addrset.setdefault(fbase, set())
+        self.__fbase_2_addrset[fbase].add(address)
+
+    def execute(self):
+        for fbase, addrset in self.__fbase_2_addrset.items():
+            fname = self.__fbase_2_fname[fbase]
+            self.__popen(addrset, fbase, fname)
+
+    def get_from_cache(self, address):
+        return self.__address_2_line.get(address)
+
+    def __popen(self, addrset, fbase, fname):
+        is_so = self.__is_shared_object(fname)
+
+        addrlist = list(addrset)
+        if is_so:
+            for i in range(len(addrlist)):
+                addrlist[i] = addrlist[i] - fbase
+        
+        pcmd = 'addr2line -Cfse {0}'.format(fname)
+        for addr in addrlist:
+            pcmd = '{0}  0x{1:x}'.format(pcmd, addr)
+        
+        p = subprocess.Popen(pcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        for addr in addrlist:
+            addr_raw = addr if not is_so else addr + fbase
+            function = self.__to_string(p.stdout.readline()).rstrip('\n')
+            file = self.__to_string(p.stdout.readline()).rstrip('\n')
+            line = "{0}\t{1}\t{2}".format(function, file, fname)
+            self.__address_2_line[addr_raw] = line
+
+    def __is_shared_object(self, file_path):
+        if file_path not in self.__is_shared_object_cache: 
+            with open(file_path, 'rb') as elf:
+                elf.seek(16) # ei_ident
+                ei_type = struct.unpack('H', elf.read(2))[0]
+                self.__is_shared_object_cache[file_path] = ei_type == 3
+        return self.__is_shared_object_cache[file_path]
+
+    def __to_string(self, str_or_bytes): # compatible with Python2 and Python3. 
+        if type(str_or_bytes) != str:
+            str_or_bytes = str_or_bytes.decode('utf-8')
+        return str_or_bytes        
+
 def load_bin_file(file_path):
     with open(file_path, 'rb') as file:
         fmt = '=qqqq28q' # ptr, time, size, reserve, stack
@@ -35,54 +88,27 @@ def save_file(file_path, data):
                 file.write('{0}\n'.format(frame))
             file.write('========\n\n')
 
-def to_string(str_or_bytes): # compatible with Python2 and Python3. 
-    if type(str_or_bytes) != str:
-        str_or_bytes = str_or_bytes.decode('utf-8')
-    return str_or_bytes
-
-_is_shared_object_cache = {}
-def is_shared_object(file_path):
-    if file_path not in _is_shared_object_cache: 
-        with open(file_path, 'rb') as elf:
-            elf.seek(16) # ei_ident
-            ei_type = struct.unpack('H', elf.read(2))[0]
-            _is_shared_object_cache[file_path] = ei_type == 3
-    return _is_shared_object_cache[file_path]
-
-_addr2line_cache = {}
-def addr2line(address, fbase, fname):
-    if fbase == '(nil)':
-        return "{0}\t{1}\t{2}".format(address, fbase, fname)
-
-    if address in _addr2line_cache:
-        cache_line = _addr2line_cache[address]
-        if fbase == cache_line['fbase'] and fname == cache_line['fname']:
-            return cache_line['line']
-
-    address_i = address
-    if is_shared_object(fname): 
-        address_i = address - fbase
-
-    pcmd = 'addr2line -Cfse {0} 0x{1:x}'.format(fname, address_i)
-    p = subprocess.Popen(pcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    function = to_string(p.stdout.readline()).rstrip('\n')
-    file = to_string(p.stdout.readline()).rstrip('\n')
-    line = "{0}\t{1}\t{2}".format(function, file, fname)
-
-    _addr2line_cache[address] = {'fbase':fbase, 'fname':fname, 'line':line}
-    return line
-
 def load_data(file_path, maps, output_path):
     data = load_bin_file(file_path)
     data.sort(key = lambda x : x['time'])
 
+    addr2line = Addr2Line()
+
     for item in data:
-        stack_line = []
         for address in item['stack']:
             line = '0x{:x}'.format(address)
             moudle = list(filter(lambda x : address >= x['start'] and address < x['end'], maps))
             if moudle:
-                line = addr2line(address, moudle[0]['start'], moudle[0]['pathname'])
+                addr2line.add(address, moudle[0]['start'], moudle[0]['pathname'])
+
+    addr2line.execute()
+
+    for item in data:
+        stack_line = []
+        for address in item['stack']:
+            line = addr2line.get_from_cache(address)
+            if not line:
+                line = '0x{:x}'.format(address)
             stack_line.append(line)
         item['stack_line'] = stack_line
 
