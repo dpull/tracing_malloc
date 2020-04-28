@@ -9,8 +9,8 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-#define HASHMAP_NULL        (0)
-#define HASHMAP_SENTINEL    (-1)
+#define HASHMAP_NULL        (-1)
+#define HASHMAP_SENTINEL    (-2)
 
 struct hashmap {
     struct hashmap_value* hashmap_value;
@@ -57,7 +57,9 @@ struct hashmap* hashmap_create(const char* file, size_t value_max_count)
         return NULL;
 
     check_system_supports(hashmap_value);
-    memset(hashmap_value, HASHMAP_NULL, length);
+	for(size_t i = 0; i < hashmap->max_count; i++) {
+		hashmap_value[i].pointer = HASHMAP_NULL;
+    }
 
     struct hashmap* hashmap = (struct hashmap*)sys_malloc(sizeof(*hashmap));
     hashmap->hashmap_value = hashmap_value;
