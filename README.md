@@ -10,7 +10,7 @@ tracing_malloc is a memory analyzer and memory leak detector for Linux C/C++. It
 ## Compile
 
 1. Run ./build_libunwind to install libunwind
-2. Create a temporary dir and run cmake ${proj}/src temp_dir
+2. Create a temporary dir and run `cmake ${proj}/src`
 3. make
 
 ## How to use

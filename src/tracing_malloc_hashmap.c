@@ -60,7 +60,7 @@ struct hashmap *hashmap_create(const char *file, size_t value_max_count)
 		return NULL;
 
 	check_system_supports(hashmap_value);
-	for (size_t i = 0; i < hashmap->max_count; i++) {
+	for (size_t i = 0; i < value_max_count; i++) {
 		hashmap_value[i].pointer = HASHMAP_NULL;
 	}
 

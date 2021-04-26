@@ -6,7 +6,7 @@ then
     wget -O libunwind-master.zip https://github.com/libunwind/libunwind/archive/v1.3.1.zip
     unzip libunwind-master.zip
 fi
-cd ${libunwind}
+cd libunwind-1.3.1
 
 ./autogen.sh 
 ./configure CFLAGS=-fPIC 
