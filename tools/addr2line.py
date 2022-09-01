@@ -34,18 +34,22 @@ class Addr2Line:
         if is_so:
             for i in range(len(addrlist)):
                 addrlist[i] = addrlist[i] - fbase
-        
-        pcmd = 'addr2line -Cfse {0}'.format(fname)
-        for addr in addrlist:
-            pcmd = '{0}  0x{1:x}'.format(pcmd, addr)
-        
-        p = subprocess.Popen(pcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        for addr in addrlist:
-            addr_raw = addr if not is_so else addr + fbase
-            function = self.__to_string(p.stdout.readline()).rstrip('\n')
-            file = self.__to_string(p.stdout.readline()).rstrip('\n')
-            line = "{0}\t{1}\t{2}".format(function, file, fname)
-            self.__address_2_line[addr_raw] = line
+
+        max_addr_line = 3000
+        while len(addrlist) > 0:
+            curlist = addrlist[:max_addr_line]
+            addrlist = addrlist[max_addr_line:]
+            pcmd = 'addr2line -Cfse {0}'.format(fname)
+            for addr in curlist:
+                pcmd = '{0}  0x{1:x}'.format(pcmd, addr)
+            
+            p = subprocess.Popen(pcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            for addr in curlist:
+                addr_raw = addr if not is_so else addr + fbase
+                function = self.__to_string(p.stdout.readline()).rstrip('\n')
+                file = self.__to_string(p.stdout.readline()).rstrip('\n')
+                line = "{0}\t{1}\t{2}".format(function, file, fname)
+                self.__address_2_line[addr_raw] = line
 
     def __is_shared_object(self, file_path):
         if file_path not in self.__is_shared_object_cache: 

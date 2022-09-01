@@ -34,7 +34,7 @@ __attribute__((always_inline)) static inline int _record_init()
 	}
 
 	sprintf(file_name, "/tmp/%s.%d", "tracing.malloc", pid);
-	struct hashmap *hashmap = hashmap_create(file_name, 1024 * 1024);
+	struct hashmap *hashmap = hashmap_create(file_name, 8 * 1024 * 1024);
 
 	if (!hashmap)
 		return ALLOC_FAILED;
