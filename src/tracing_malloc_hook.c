@@ -113,6 +113,8 @@ __attribute__((visibility("default"))) void *malloc(size_t size)
 
 __attribute__((visibility("default"))) void free(void *ptr)
 {
+    if (unlikely(!ptr))
+		return;
 	if (unlikely(is_internal_malloc(ptr)))
 		return;
 	g_sys_free(ptr);
