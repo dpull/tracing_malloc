@@ -2,7 +2,7 @@ local core = require("core")
 
 local function stat(alloc_infos)
     local root = {}
-    local start = alloc_infos[1].time + 10 * 60
+    local start = alloc_infos[1].time + 30 * 60
     for _, info in ipairs(alloc_infos) do
         if info.time > start then
             local stack = root

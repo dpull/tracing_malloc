@@ -13,13 +13,13 @@ local function stat(alloc_infos)
     }
 
     local next_interval = start + interval
-    local next_interval_key = core.time2str(start)
+    local next_interval_key = start
 
     for _, info in ipairs(alloc_infos) do
 		st.total = st.total + info.size
 
         if info.time > next_interval then
-            next_interval_key = core.time2str(info.time)
+            next_interval_key = info.time
             next_interval = info.time + interval
             next_interval_total = 0
         end
@@ -27,15 +27,16 @@ local function stat(alloc_infos)
 		interval_total = interval_total + info.size
         st.interval[next_interval_key] = interval_total
 	end
-
-    st.total_str = core.size2str(st.total)
     return st
 end
 
 local function stat_all()
     for file, alloc_infos in pairs(alloc_cache) do
         local st = stat(alloc_infos)
-        log_tree(string.format("file:%s", file), st)
+        print(file, string.format("%s-%s", st.start, st.stop), core.size2str(st.total))
+        for k, v in pairs(st.interval) do
+            print("\t", core.time2str(k), core.size2str(v))
+        end
     end
 end
 
