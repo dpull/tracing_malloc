@@ -25,7 +25,7 @@ After the process quits, a tracing.malloc.pid is generated, like tracing.malloc.
 
 ## How to analyze
 
-To see unfreed memory and its allocation time, use ${proj}/tools/allocation/main.py to open tracing.malloc.pid or tracing.malloc.pid.time.
+To see unfreed memory and its allocation time, use ${proj}/tools/disuse/allocation/main.py to open tracing.malloc.pid or tracing.malloc.pid.time.
 
 ![](./alloc_comparison.png)
 
