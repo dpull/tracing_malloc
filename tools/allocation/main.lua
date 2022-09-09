@@ -8,7 +8,7 @@ for k, v in ipairs(arg) do
 end
 
 while true do
-    print("input file path:")
+    io.write("input file path:")
     local filename = io.read()
     core.load_script(filename)
 end
