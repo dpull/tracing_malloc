@@ -17,6 +17,7 @@ static void *(*g_sys_realloc)(void *ptr, size_t size) = NULL;
 static int (*g_sys_posix_memalign)(void **memptr, size_t alignment,
 				   size_t size) = NULL;
 static void *(*g_sys_aligned_alloc)(size_t alignment, size_t size) = NULL;
+static size_t (*g_sys_malloc_usable_size)(void *ptr) = NULL;
 
 /* Round "value" up to next "alignment" boundary. Requires that "alignment" be a power of two. */
 static inline intptr_t round_up(intptr_t value, intptr_t alignment)
@@ -67,8 +68,7 @@ static inline void *get_address(const char *symbol)
 
 static void atfork_child(void)
 {
-	/* todo copy files.*/
-	record_init();
+    record_uninit();
 }
 
 __attribute__((constructor)) static void init(void)
@@ -79,6 +79,7 @@ __attribute__((constructor)) static void init(void)
 	g_sys_realloc = get_address("realloc");
 	g_sys_posix_memalign = get_address("posix_memalign");
 	g_sys_aligned_alloc = get_address("aligned_alloc");
+    g_sys_malloc_usable_size = get_address("malloc_usable_size");
 
 	pthread_atfork(NULL, NULL, atfork_child);
 
@@ -191,4 +192,11 @@ __attribute__((visibility("default"))) void *aligned_alloc(size_t alignment,
 	void *ptr = g_sys_aligned_alloc(alignment, size);
 	record_alloc(ptr, size);
 	return ptr;
+}
+
+__attribute__((visibility("default"))) size_t malloc_usable_size(void *ptr)
+{
+	if (unlikely(is_internal_malloc(ptr))) 
+		return 0;
+    return g_sys_malloc_usable_size(ptr);
 }

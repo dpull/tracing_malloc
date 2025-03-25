@@ -21,35 +21,21 @@ struct record_data {
 static struct record_data g_record = { NULL, 0 };
 __thread int record_disable_flag = 0;
 
-__attribute__((always_inline)) static inline int _record_init()
+static int is_bash() 
 {
-	pid_t pid = getpid();
-	char file_name[FILENAME_MAX];
+    char path[FILENAME_MAX];
+    ssize_t len = readlink("/proc/self/exe", path, sizeof(path));
+    if (len == -1 || len >= sizeof(path)) 
+        return 0; 
+    path[len] = '\0';
 
-	if (g_record.hashmap) {
-		assert(g_record.pid != 0 && g_record.pid != pid);
-		hashmap_destory(g_record.hashmap);
-		g_record.hashmap = NULL;
-		g_record.pid = 0;
-	}
-
-	sprintf(file_name, "/tmp/%s.%d", "tracing.malloc", pid);
-	struct hashmap *hashmap = hashmap_create(file_name, RECORD_MAX_COUNT);
-
-	if (!hashmap)
-		return ALLOC_FAILED;
-
-	g_record.hashmap = hashmap;
-	g_record.pid = pid;
-	return 0;
-}
-
-int record_init()
-{
-	record_disable_flag = 1;
-	int ret = _record_init();
-	record_disable_flag = 0;
-	return ret;
+    char *name = strrchr(path, '/');
+    if (name != NULL) {
+        name++;
+    } else {
+        name = path; 
+    }
+    return strcmp(name, "bash") == 0 ? 1 : 0;
 }
 
 static void _backup_proc_maps()
@@ -85,6 +71,34 @@ cleanup:
 		fclose(dst);
 }
 
+__attribute__((always_inline)) static inline int _record_init()
+{
+	pid_t pid = getpid();
+	char file_name[FILENAME_MAX];
+
+	if (g_record.hashmap) {
+		assert(g_record.pid != 0 && g_record.pid != pid);
+		hashmap_destory(g_record.hashmap);
+		g_record.hashmap = NULL;
+		g_record.pid = 0;
+	}
+
+    if (is_bash()) 
+	    return 0;
+
+    _backup_proc_maps();
+
+	sprintf(file_name, "/tmp/%s.%d", "tracing.malloc", pid);
+	struct hashmap *hashmap = hashmap_create(file_name, RECORD_MAX_COUNT);
+
+	if (!hashmap)
+		return ALLOC_FAILED;
+
+	g_record.hashmap = hashmap;
+	g_record.pid = pid;
+	return 0;
+}
+
 static int _record_debug(struct hashmap_value *hashmap_value)
 {
 	printf("ptr:%p, size:%lld\n", (void *)hashmap_value->pointer,
@@ -92,12 +106,26 @@ static int _record_debug(struct hashmap_value *hashmap_value)
 	return 0;
 }
 
+int record_init()
+{
+	record_disable_flag = 1;
+	int ret = _record_init();
+	record_disable_flag = 0;
+	return ret;
+}
+
 __attribute__((always_inline)) static inline void _record_uninit()
 {
+    if (g_record.pid == 0) 
+        return;
+
+    pid_t pid = getpid();
+    if (g_record.pid == pid) 
+        _backup_proc_maps();
+
 	/* 
     hashmap_traverse(g_record.hashmap, _record_debug); 
     */
-	_backup_proc_maps();
 	hashmap_destory(g_record.hashmap);
 	g_record.hashmap = NULL;
 	g_record.pid = 0;
