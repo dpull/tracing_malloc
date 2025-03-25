@@ -1,11 +1,11 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
-#include <dlfcn.h>
 #include "stacktrace_backtrace_dladdr.h"
+#include <cxxabi.h>
+#include <dlfcn.h>
 #include <execinfo.h>
 #include <stdlib.h>
-#include <cxxabi.h>
 
 struct stacktrace_backtrace_dladdr_frame {
     void* address = nullptr;
@@ -15,7 +15,8 @@ struct stacktrace_backtrace_dladdr_frame {
     void* saddr = nullptr;
     const char* demangled = nullptr;
 
-    ~stacktrace_backtrace_dladdr_frame() {
+    ~stacktrace_backtrace_dladdr_frame()
+    {
         if (demangled)
             free((void*)demangled);
     }
@@ -33,7 +34,7 @@ stacktrace_backtrace_dladdr::~stacktrace_backtrace_dladdr()
         delete[] stacktrace;
 }
 
-void stacktrace_backtrace_dladdr::collect() 
+void stacktrace_backtrace_dladdr::collect()
 {
     void* buffer[STACK_TRACE_DEPTH];
     stacktrace_len = backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]));
@@ -43,7 +44,7 @@ void stacktrace_backtrace_dladdr::collect()
     }
 }
 
-void stacktrace_backtrace_dladdr::analysis() 
+void stacktrace_backtrace_dladdr::analysis()
 {
     int status;
     Dl_info dli;
@@ -58,7 +59,7 @@ void stacktrace_backtrace_dladdr::analysis()
         frame->sname = dli.dli_sname;
         frame->saddr = dli.dli_saddr;
 
-        if (dli.dli_sname) 
+        if (dli.dli_sname)
             frame->demangled = abi::__cxa_demangle(dli.dli_sname, nullptr, nullptr, &status);
     }
 }

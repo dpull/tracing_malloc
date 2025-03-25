@@ -4,10 +4,7 @@
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 
-void stacktrace_libunwind::collect()
-{
-    size = unw_backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]));
-}
+void stacktrace_libunwind::collect() { size = unw_backtrace(buffer, sizeof(buffer) / sizeof(buffer[0])); }
 
 void stacktrace_libunwind::output(FILE* stream)
 {

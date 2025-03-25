@@ -1,7 +1,7 @@
+#include <chrono>
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
-#include <chrono>
 
 int times = 0;
 int loop = 0;
@@ -15,7 +15,7 @@ void myfunc3()
         void* p = NULL;
         if (posix_memalign(&p, 16, i))
             continue;
-            
+
         buffer_array.push_back((char*)p);
         if (i % leak)
             free(p);
@@ -24,10 +24,7 @@ void myfunc3()
     }
 }
 
-static void myfunc2(void) /* "static" means don't export the symbol... */
-{
-    myfunc3();
-}
+static void myfunc2(void) /* "static" means don't export the symbol... */ { myfunc3(); }
 
 void myfunc(int ncalls)
 {
@@ -37,7 +34,7 @@ void myfunc(int ncalls)
         myfunc2();
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     if (argc != 4) {
         fprintf(stderr, "%s times loop leak\n", argv[0]);

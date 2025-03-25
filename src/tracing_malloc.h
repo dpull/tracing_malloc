@@ -18,8 +18,8 @@ extern "C" {
 #define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
-void *sys_malloc(size_t size);
-void sys_free(void *ptr);
+void* sys_malloc(size_t size);
+void sys_free(void* ptr);
 
 #ifdef __cplusplus
 }

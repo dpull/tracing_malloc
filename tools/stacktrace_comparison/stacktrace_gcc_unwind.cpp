@@ -10,7 +10,7 @@ struct libgcc_backtrace_data {
     void** end;
 };
 
-static _Unwind_Reason_Code libgcc_backtrace_callback(struct _Unwind_Context* ctx, void* _data) 
+static _Unwind_Reason_Code libgcc_backtrace_callback(struct _Unwind_Context* ctx, void* _data)
 {
     struct libgcc_backtrace_data* data = (struct libgcc_backtrace_data*)_data;
     if (data->skip > 0) {
@@ -23,7 +23,7 @@ static _Unwind_Reason_Code libgcc_backtrace_callback(struct _Unwind_Context* ctx
     return (ip && data->pos < data->end) ? _URC_NO_REASON : _URC_END_OF_STACK;
 }
 
-void stacktrace_gcc_unwind::collect() 
+void stacktrace_gcc_unwind::collect()
 {
     struct libgcc_backtrace_data data;
     data.skip = 0;

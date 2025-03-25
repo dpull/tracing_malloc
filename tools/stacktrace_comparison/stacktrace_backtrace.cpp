@@ -4,16 +4,13 @@
 
 stacktrace_backtrace::~stacktrace_backtrace()
 {
-    if (strings) 
+    if (strings)
         free(strings);
 }
 
-void stacktrace_backtrace::collect() 
-{
-    size = backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]));
-}
+void stacktrace_backtrace::collect() { size = backtrace(buffer, sizeof(buffer) / sizeof(buffer[0])); }
 
-void stacktrace_backtrace::analysis() 
+void stacktrace_backtrace::analysis()
 {
     if (!strings)
         strings = backtrace_symbols(buffer, size);
