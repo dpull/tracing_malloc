@@ -21,10 +21,7 @@ file(GLOB_RECURSE PROJ_SRC
 add_executable(${PROJ_NAME} ${PROJ_SRC})
 set_target_properties(${PROJ_NAME} PROPERTIES LINK_FLAGS -rdynamic)
 target_link_libraries(${PROJ_NAME} dl)
-
-if(USE_LIBUNWIND) 
-    target_link_libraries(${PROJ_NAME} unwind.a)
-endif(USE_LIBUNWIND)
+target_link_libraries(${PROJ_NAME} dwarf)
 
 message(STATUS *******************************************************)
 message(STATUS CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME})
