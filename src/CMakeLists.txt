@@ -18,7 +18,12 @@ if(USE_LIBUNWIND)
     add_definitions(-DUSE_LIBUNWIND) 
 endif(USE_LIBUNWIND)
 
-aux_source_directory(. PROJ_SRC)
+file(GLOB_RECURSE PROJ_SRC 
+    *.h
+    *.cpp
+    *.cc
+    *.c
+)
 
 add_library(${PROJ_NAME} SHARED ${PROJ_SRC})
 target_link_libraries(${PROJ_NAME} dl)

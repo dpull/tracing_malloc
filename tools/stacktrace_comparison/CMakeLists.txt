@@ -17,7 +17,12 @@ if(USE_LIBUNWIND)
     add_definitions(-DUSE_LIBUNWIND) 
 endif(USE_LIBUNWIND)
 
-aux_source_directory(. PROJ_SRC)
+file(GLOB_RECURSE PROJ_SRC 
+    *.h
+    *.cpp
+    *.cc
+    *.c
+)
 
 add_executable(${PROJ_NAME} ${PROJ_SRC})
 set_target_properties(${PROJ_NAME} PROPERTIES LINK_FLAGS -rdynamic)
