@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <stdio.h>
 #include <string>
+#include <cstring>
 #include <vector>
 
 std::vector<snapshot> load_snapshot(const std::string& file_path)
@@ -58,7 +59,7 @@ int save_snapshot(const std::string& file_path, const std::vector<snapshot>& dat
         fprintf(file, "time:%lld\tsize:%lld\tptr:0x%llx\n", item.time, item.size, item.ptr);
 
         for (const auto& frame : item.stack_line) {
-            fprintf(file, "%llu\n", frame);
+            fprintf(file, "%llu\n", frame.c_str());
         }
 
         fprintf(file, "========\n\n");

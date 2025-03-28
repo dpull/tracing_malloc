@@ -1,5 +1,7 @@
 #pragma once
 #include <vector>
+#include <string>
+#include <cstdint>
 
 struct snapshot {
     int64_t ptr;
@@ -9,4 +11,4 @@ struct snapshot {
     std::vector<std::string> stack_line;
 };
 std::vector<snapshot> load_snapshot(const std::string& file_path);
-void save_snapshot(const std::string& file_path, const std::vector<snapshot>& data);
+int save_snapshot(const std::string& file_path, const std::vector<snapshot>& data);

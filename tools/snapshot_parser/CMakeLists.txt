@@ -11,6 +11,8 @@ if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
    add_definitions(-D_DEBUG)
 endif()
 
+add_definitions(-DLIBDWARF_STATIC)
+
 file(GLOB_RECURSE PROJ_SRC
     *.h
     *.cpp
@@ -21,7 +23,7 @@ file(GLOB_RECURSE PROJ_SRC
 add_executable(${PROJ_NAME} ${PROJ_SRC})
 set_target_properties(${PROJ_NAME} PROPERTIES LINK_FLAGS -rdynamic)
 target_link_libraries(${PROJ_NAME} dl)
-target_link_libraries(${PROJ_NAME} dwarf)
+target_link_libraries(${PROJ_NAME} dwarf.a)
 
 message(STATUS *******************************************************)
 message(STATUS CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME})

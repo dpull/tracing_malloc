@@ -1,6 +1,7 @@
 #include "add2line.h"
 #include "map_info.h"
 #include "snapshot.h"
+#include <sstream>
 
 int analyze(const std::string& maps_path, const std::string& snapshot_path, const std::string& output_path)
 {
@@ -41,9 +42,6 @@ int analyze(const std::string& maps_path, const std::string& snapshot_path, cons
             item.stack_line.push_back(line);
         }
     }
-
-    // 保存结果
-    Logger::info("保存结果到: " + output_path);
     save_snapshot(output_path, data);
 }
 

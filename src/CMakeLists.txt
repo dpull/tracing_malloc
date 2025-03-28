@@ -36,8 +36,8 @@ endif(USE_LIBUNWIND)
 add_custom_command(
     TARGET ${PROJ_NAME}
     POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/libtracing_malloc.so /tmp/libtracing_malloc.so
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/../tools/addr2line.py /tmp/addr2line.py
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/src/libtracing_malloc.so /tmp/libtracing_malloc.so
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/tools/addr2line.py /tmp/addr2line.py
 )
 
 message(STATUS *******************************************************)

@@ -1,6 +1,9 @@
 #include "add2line.h"
 #include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <dwarf.h>
 #include <libdwarf.h>
 #include <memory>
 #include <mutex>
@@ -44,58 +47,9 @@ bool addr2line::is_shared_object(const std::string& file_path)
     return is_so;
 }
 
-static std::string get_function_info(Dwarf_Debug dbg, Dwarf_Addr address)
+static std::string get_function_info(Dwarf_Debug dbg, Dwarf_Addr address) 
 {
-    Dwarf_Error err;
-    Dwarf_Compile_Unit cu;
-    Dwarf_Unsigned cu_offset;
-    std::string func;
-    std::string file;
-
-    while (dwarf_next_cu(dbg, &cu, &cu_offset, &err) == DW_DLV_OK) {
-        // Get the first DIE of the compile unit
-        Dwarf_Die die;
-        if (dwarf_siblingof(dbg, NULL, &die, &err) == DW_DLV_OK) {
-            do {
-                // Get the low and high PC of the DIE
-                Dwarf_Addr low_pc, high_pc;
-                if (dwarf_lowpc(die, &low_pc, &err) != DW_DLV_OK || dwarf_highpc(die, &high_pc, &err) != DW_DLV_OK)
-                    continue;
-
-                // Check if the address is within the range
-                if (address < low_pc || address >= high_pc)
-                    continue;
-
-                // Get the function name
-                char* func_name;
-                if (dwarf_diename(die, &func_name, &err) == DW_DLV_OK) {
-                    func = func_name;
-                }
-
-                // Get the line information
-                Dwarf_Line* linebuf;
-                Dwarf_Signed linecount;
-                if (dwarf_get_linebuf(die, &linebuf, &linecount, &err) != DW_DLV_OK)
-                    continue;
-
-                for (Dwarf_Signed i = 0; i < linecount; ++i) {
-                    Dwarf_Unsigned line_number;
-                    Dwarf_Unsigned file_index;
-
-                    if (dwarf_line_srcfileno(linebuf[i], &file_index, &err) == DW_DLV_OK && dwarf_line_number(linebuf[i], &line_number, &err) != DW_DLV_OK)
-                        continue;
-
-                    if (dwarf_srcfile(linebuf[i], file_index, &filename, &err) == DW_DLV_OK) {
-                        file.append(filename);
-                        file.append(":");
-                        file.append(line_number);
-                    }
-                    break;
-                }
-            } while (dwarf_siblingof(dbg, die, &die, &err) == DW_DLV_OK);
-        }
-    }
-    return func + "\t" + file;
+    return "";
 }
 
 void addr2line::popen_exec(const std::string& fname, uint64_t fbase, std::vector<uint64_t>& addrset)
@@ -107,10 +61,14 @@ void addr2line::popen_exec(const std::string& fname, uint64_t fbase, std::vector
         }
     }
 
-    Dwarf_Debug dbg;
-    Dwarf_Error err;
-    if (dwarf_init_path(fname.c_str(), nullptr, DWARF_READ_DEBUG_INFO, 0, &dbg, &err) != DW_DLV_OK) {
+    char real_path[FILENAME_MAX];
+    Dwarf_Debug dbg = 0;
+    Dwarf_Error err = 0;
+
+    if (dwarf_init_path(fname.c_str(), real_path, sizeof(real_path), DW_GROUPNUMBER_ANY, 0, 0, &dbg, &err) != DW_DLV_OK) {
         fprintf(stderr, "dwarf_init_path %s filed, %s\n", fname.c_str(), dwarf_errmsg(err));
+        dwarf_dealloc_error(dbg, err);
+        dwarf_finish(dbg);
         return;
     }
 
@@ -120,7 +78,7 @@ void addr2line::popen_exec(const std::string& fname, uint64_t fbase, std::vector
 
     for (size_t i = 0; i < num_threads; ++i) {
         size_t start = i * chunk_size;
-        size_t end = (i == num_threads - 1) ? data.size() : start + chunk_size;
+        size_t end = (i == num_threads - 1) ? addrset.size() : start + chunk_size;
         threads.emplace_back(
             [this, is_so, fbase, &fname, &dbg, &addrset](size_t start, size_t end) {
                 for (size_t i = start; i < end; ++i) {
@@ -140,7 +98,7 @@ void addr2line::popen_exec(const std::string& fname, uint64_t fbase, std::vector
     for (auto& t : threads) {
         t.join();
     }
-    dwarf_finish(dbg, &err);
+    dwarf_finish(dbg);
 }
 
 void addr2line::add(uint64_t address, uint64_t fbase, const std::string& fname)

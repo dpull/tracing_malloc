@@ -21,7 +21,7 @@ fi
 
 cd build
 
-cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ../src
+cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ../
 
 make -j64
 
