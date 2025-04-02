@@ -4,4 +4,3 @@ project("tracing_malloc_all")
 
 add_subdirectory(src)
 add_subdirectory(tools/alloc_comparison)
-add_subdirectory(tools/stacktrace_comparison)

@@ -70,9 +70,10 @@ local function tab2string(visited, path, base, tab)
     return lines;
 end
 
-function log_tree(desc, var)
+
+function log_tree_callback(desc, var, cb)
     if type(var) ~= "table" then
-        print(var2string(desc)..": "..var2string(var));
+        cb(var2string(desc)..": "..var2string(var));
         return;
     end
 
@@ -80,12 +81,16 @@ function log_tree(desc, var)
     local out = tab2string(visited, "", "", var);
 
     if type(out) == "string" then
-        print(var2string(desc)..": "..out);
+        cb(var2string(desc)..": "..out);
         return;
     end
 
     print(var2string(desc));
     for i, line in ipairs(out) do
-        print(line);
-    end
+        cb(line);
+    end    
+end
+
+function log_tree(desc, var)
+    log_tree_callback(desc, var, print)
 end

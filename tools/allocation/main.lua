@@ -5,6 +5,7 @@ local core = require("core")
 
 for k, v in ipairs(arg) do
     core.cache(v)
+    io.write("load:" .. v)
 end
 
 while true do
