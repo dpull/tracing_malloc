@@ -6,15 +6,13 @@ import (
 	"log"
 	"os"
 	"sort"
-
-	"github.com/bytedance/gopkg/util/gopool"
 )
 
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	gopool.SetCap(8)
 
 	mapsPath := flag.String("maps", "", "cache file of /proc/$PID/maps")
+	flag.IntVar(&Addr2lineNum, "num", 8, "number of addr2line process")
 	flag.Parse()
 
 	if *mapsPath == "" {

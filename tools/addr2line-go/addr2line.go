@@ -13,9 +13,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/pkg/errors"
 )
+
+var Addr2lineNum int
 
 type Addr2Line struct {
 	fbaseToFname    map[uint64]string
@@ -74,7 +75,7 @@ func (a *Addr2Line) addr2line(addrset []uint64, fbase uint64, fname string) erro
 		}
 	}
 
-	const maxAddrLine = 3000
+	maxAddrLine := len(addrset)/Addr2lineNum + 1
 
 	var wg sync.WaitGroup
 	startPos := 0
@@ -88,7 +89,7 @@ func (a *Addr2Line) addr2line(addrset []uint64, fbase uint64, fname string) erro
 		startPos += maxAddrLine
 
 		wg.Add(1)
-		gopool.Go(func() {
+		go func() {
 			defer wg.Done()
 
 			for i := 0; i < 8; i++ {
@@ -97,8 +98,7 @@ func (a *Addr2Line) addr2line(addrset []uint64, fbase uint64, fname string) erro
 					break
 				}
 			}
-
-		})
+		}()
 	}
 
 	wg.Wait()
@@ -106,18 +106,17 @@ func (a *Addr2Line) addr2line(addrset []uint64, fbase uint64, fname string) erro
 }
 
 func (a *Addr2Line) popen(addrlist []uint64, fname string, isSO bool, fbase uint64) []uint64 {
-	cmds := make([]string, len(addrlist)+2)
-	cmds[0] = "-Cfse"
-	cmds[1] = fname
-	for i, v := range addrlist {
-		cmds[i+2] = fmt.Sprintf("0x%x", v)
-	}
-
+	var stdin bytes.Buffer
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	cmd := exec.Command("addr2line", cmds...)
+	cmd := exec.Command("addr2line", "-Cfse", fname)
+	cmd.Stdin = &stdin
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
+
+	for _, v := range addrlist {
+		stdin.WriteString(fmt.Sprintf("0x%x\n", v))
+	}
 
 	err := cmd.Run()
 	if err != nil && stdout.Len() == 0 {

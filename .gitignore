@@ -3,6 +3,3 @@ build
 tools/addr2line-go/addr2line-go
 tools/addr2line-go/.idea
 *.pyc
-tools/snapshot-compare/.vs
-tools/snapshot-compare/obj/
-tools/snapshot-compare/bin/
