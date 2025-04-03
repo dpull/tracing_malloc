@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
 	"sort"
 )
 
@@ -16,7 +15,8 @@ func main() {
 	flag.Parse()
 
 	if *mapsPath == "" {
-		log.Fatalf("usage: %s --maps tracing.malloc.[pid].maps tracing.malloc.[pid]", os.Args[0])
+		flag.Usage()
+		return
 	}
 
 	maps, err := loadMaps(*mapsPath)
