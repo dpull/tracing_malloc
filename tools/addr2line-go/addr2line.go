@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -184,11 +185,11 @@ func (a *Addr2Line) isSharedObject(filePath string) (bool, error) {
 }
 
 type BinData struct {
-	Ptr       int64
-	Time      int64
-	Size      int64
-	Stack     []uint64
-	StackLine []string
+	Ptr      int64
+	Time     int64
+	Size     int64
+	Stack    []uint64
+	UserData interface{}
 }
 
 func loadBinFile(filePath string) ([]BinData, error) {
@@ -248,36 +249,6 @@ func loadBinFile(filePath string) ([]BinData, error) {
 	}
 
 	return data, nil
-}
-
-func saveFile(filePath string, data []BinData) error {
-	file, err := os.Create(filePath)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	defer file.Close()
-
-	writer := bufio.NewWriter(file)
-	for _, item := range data {
-		_, err := fmt.Fprintf(writer, "time:%d\tsize:%d\tptr:0x%x\n", item.Time, item.Size, item.Ptr)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-
-		for _, frame := range item.StackLine {
-			_, err := fmt.Fprintf(writer, "%s\n", frame)
-			if err != nil {
-				return errors.WithStack(err)
-			}
-		}
-
-		_, err = fmt.Fprintf(writer, "========\n\n")
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-
-	return writer.Flush()
 }
 
 type MapInfo struct {
@@ -359,4 +330,33 @@ func loadMaps(filePath string) ([]MapInfo, error) {
 	}
 
 	return maps, nil
+}
+
+func Analyze(snapshotPath string, maps []MapInfo, addr2line *Addr2Line) ([]BinData, error) {
+	data, err := loadBinFile(snapshotPath)
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Slice(data, func(i, j int) bool {
+		return data[i].Time < data[j].Time
+	})
+
+	for _, item := range data {
+		for _, address := range item.Stack {
+			for _, module := range maps {
+				if address >= module.Start && address < module.End {
+					addr2line.Add(address, module.Start, module.Pathname)
+					break
+				}
+			}
+		}
+	}
+
+	err = addr2line.Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
