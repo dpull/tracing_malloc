@@ -56,7 +56,7 @@ static inline void* get_address(const char* symbol)
     return address;
 }
 
-static void atfork_child(void) { record_uninit(); }
+static void atfork_child(void) { record_init(); }
 
 __attribute__((constructor)) static void init(void)
 {
