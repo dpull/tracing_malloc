@@ -239,7 +239,7 @@ func loadBinFile(filePath string) ([]BinData, error) {
 			return nil, fmt.Errorf("read stack filed: %v", err)
 		}
 
-		if item.State != 0 {
+		if item.State == 0 {
 			continue
 		}
 
