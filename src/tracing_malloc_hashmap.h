@@ -9,7 +9,8 @@ extern "C" {
 struct hashmap_value {
     int64_t pointer;
     int64_t alloc_time;
-    int64_t alloc_size;
+    int64_t value_state : 4;
+    int64_t alloc_size : 60;
     int64_t reserve;
     int64_t address[STACK_TRACE_DEPTH];
 };

@@ -186,6 +186,7 @@ func (a *Addr2Line) isSharedObject(filePath string) (bool, error) {
 type BinData struct {
 	Ptr       int64
 	Time      int64
+	State     int64
 	Size      int64
 	Stack     []uint64
 	StackLine []string
@@ -225,6 +226,10 @@ func loadBinFile(filePath string) ([]BinData, error) {
 		if err := binary.Read(reader, binary.LittleEndian, &item.Size); err != nil {
 			return nil, errors.Errorf("read size filed: %v", err)
 		}
+
+		item.State = (item.Size >> 60) & 0xF
+		item.Size = item.Size & 0x0FFFFFFFFFFFFFFF
+
 		if err := binary.Read(reader, binary.LittleEndian, &reserve); err != nil {
 			return nil, errors.Errorf("read reserve filed: %v", err)
 		}
@@ -234,7 +239,7 @@ func loadBinFile(filePath string) ([]BinData, error) {
 			return nil, fmt.Errorf("read stack filed: %v", err)
 		}
 
-		if item.Ptr <= 0 {
+		if item.State != 0 {
 			continue
 		}
 
@@ -259,7 +264,11 @@ func saveFile(filePath string, data []BinData) error {
 
 	writer := bufio.NewWriter(file)
 	for _, item := range data {
-		_, err := fmt.Fprintf(writer, "time:%d\tsize:%d\tptr:0x%x\n", item.Time, item.Size, item.Ptr)
+		freeFlag := ""
+		if item.State < 0 {
+			freeFlag = "free"
+		}
+		_, err := fmt.Fprintf(writer, "time:%d\tsize:%d\tptr:0x%x\t%s\n", item.Time, item.Size, item.Ptr, freeFlag)
 		if err != nil {
 			return errors.WithStack(err)
 		}

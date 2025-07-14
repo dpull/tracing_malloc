@@ -9,8 +9,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define HASHMAP_NULL (-1)
-#define HASHMAP_SENTINEL (-2)
+#define HASHMAP_VALUE_NULL      (0)
+#define HASHMAP_VALUE_USING     (1)
+#define HASHMAP_VALUE_SENTINEL  (-1)
 
 struct hashmap {
     struct hashmap_value* hashmap_value;
@@ -38,6 +39,7 @@ static void* filemapping_create_readwrite(const char* file, size_t length)
 static void check_system_supports(struct hashmap_value* pointer)
 {
     _Static_assert(sizeof(int64_t) == sizeof(void*), "sizeof(int64_t) == sizeof(void*)");
+    _Static_assert(sizeof(struct hashmap_value) == sizeof(int64_t) * (STACK_TRACE_DEPTH+4), "sizeof(struct hashmap_value) == sizeof(int64_t) * (STACK_TRACE_DEPTH+4)");
 
     int pagesize = getpagesize();
     if ((pagesize % sizeof(pointer[0])) != 0)
@@ -58,7 +60,7 @@ struct hashmap* hashmap_create(const char* file, size_t value_max_count)
 
     check_system_supports(hashmap_value);
     for (size_t i = 0; i < value_max_count; i++) {
-        hashmap_value[i].pointer = HASHMAP_NULL;
+        hashmap_value[i].value_state = HASHMAP_VALUE_NULL;
     }
 
     struct hashmap* hashmap = (struct hashmap*)sys_malloc(sizeof(*hashmap));
@@ -90,8 +92,9 @@ struct hashmap_value* hashmap_add(struct hashmap* hashmap, intptr_t pointer)
 
     for (size_t i = 0; i < hashmap->max_count; i++) {
         struct hashmap_value* hashmap_value = hashmap->hashmap_value + index;
-        if (hashmap_value->pointer == HASHMAP_NULL || hashmap_value->pointer == HASHMAP_SENTINEL) {
+        if (hashmap_value->value_state == HASHMAP_VALUE_NULL || (hashmap_value->value_state == HASHMAP_VALUE_SENTINEL && hashmap_value->pointer == pointer)) {
             hashmap_value->pointer = pointer;
+            hashmap_value->value_state = HASHMAP_VALUE_USING;
 
             pthread_mutex_unlock(&hashmap->mutex);
             return hashmap_value;
@@ -112,7 +115,7 @@ struct hashmap_value* hashmap_get(struct hashmap* hashmap, intptr_t pointer)
         if (hashmap_value->pointer == pointer)
             return hashmap_value;
 
-        if (hashmap_value->pointer == HASHMAP_NULL)
+        if (hashmap_value->value_state == HASHMAP_VALUE_NULL)
             break;
 
         index = (index + 1) % max_count;
@@ -126,7 +129,7 @@ int hashmap_remove(struct hashmap* hashmap, intptr_t pointer)
 
     struct hashmap_value* hashmap_value = hashmap_get(hashmap, pointer);
     if (hashmap_value) {
-        hashmap_value->pointer = HASHMAP_SENTINEL;
+        hashmap_value->value_state = HASHMAP_VALUE_SENTINEL;
     }
 
     pthread_mutex_unlock(&hashmap->mutex);
@@ -137,7 +140,7 @@ void hashmap_traverse(struct hashmap* hashmap, hashmap_callback* callback)
 {
     for (size_t i = 0; i < hashmap->max_count; i++) {
         struct hashmap_value* hashmap_value = hashmap->hashmap_value + i;
-        if (hashmap_value->pointer == HASHMAP_NULL || hashmap_value->pointer == HASHMAP_SENTINEL)
+        if (hashmap_value->value_state == HASHMAP_VALUE_NULL || hashmap_value->value_state == HASHMAP_VALUE_SENTINEL)
             continue;
         if (callback(hashmap_value))
             break;
