@@ -86,7 +86,7 @@ int hashmap_destory(struct hashmap* hashmap)
 struct hashmap_value* hashmap_add(struct hashmap* hashmap, intptr_t pointer)
 {
     size_t max_count = hashmap->max_count;
-    int index = pointer % max_count;
+    int index = pointer / 8 % max_count;
 
     pthread_mutex_lock(&hashmap->mutex);
 
@@ -109,7 +109,7 @@ struct hashmap_value* hashmap_add(struct hashmap* hashmap, intptr_t pointer)
 struct hashmap_value* hashmap_get(struct hashmap* hashmap, intptr_t pointer)
 {
     size_t max_count = hashmap->max_count;
-    int index = pointer % max_count;
+    int index = pointer / 8 % max_count;
     for (size_t i = 0; i < hashmap->max_count; i++) {
         struct hashmap_value* hashmap_value = hashmap->hashmap_value + index;
         if (hashmap_value->value_state == HASHMAP_VALUE_NULL)
