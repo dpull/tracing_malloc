@@ -13,6 +13,8 @@
 #define ALLOC_FAILED (-2)
 #define BACKTRACE_FAILED (-3)
 
+#define RECORD_MIN_SIZE 256
+
 struct record_data {
     struct hashmap* hashmap;
     pid_t pid;
@@ -160,6 +162,9 @@ __attribute__((always_inline)) static inline int _record_alloc(int add_flag, voi
 
 int record_alloc(void* ptr, size_t size)
 {
+    if (size < RECORD_MIN_SIZE)
+        return PARAMETER_ERROR;
+
     if (unlikely(!ptr || record_disable_flag || !g_record.hashmap))
         return PARAMETER_ERROR;
 

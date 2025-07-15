@@ -112,11 +112,11 @@ struct hashmap_value* hashmap_get(struct hashmap* hashmap, intptr_t pointer)
     int index = pointer % max_count;
     for (size_t i = 0; i < hashmap->max_count; i++) {
         struct hashmap_value* hashmap_value = hashmap->hashmap_value + index;
-        if (hashmap_value->pointer == pointer)
-            return hashmap_value;
-
         if (hashmap_value->value_state == HASHMAP_VALUE_NULL)
             break;
+
+        if (hashmap_value->pointer == pointer)
+            return hashmap_value;
 
         index = (index + 1) % max_count;
     }
