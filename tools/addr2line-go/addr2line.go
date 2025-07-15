@@ -227,8 +227,8 @@ func loadBinFile(filePath string) ([]BinData, error) {
 			return nil, errors.Errorf("read size filed: %v", err)
 		}
 
-		item.State = (item.Size >> 60) & 0xF
-		item.Size = item.Size & 0x0FFFFFFFFFFFFFFF
+		item.State = item.Size & 0xF
+		item.Size = item.Size >> 4
 
 		if err := binary.Read(reader, binary.LittleEndian, &reserve); err != nil {
 			return nil, errors.Errorf("read reserve filed: %v", err)
@@ -265,7 +265,7 @@ func saveFile(filePath string, data []BinData) error {
 	writer := bufio.NewWriter(file)
 	for _, item := range data {
 		freeFlag := ""
-		if item.State < 0 {
+		if item.State != 1 {
 			freeFlag = "free"
 		}
 		_, err := fmt.Fprintf(writer, "time:%d\tsize:%d\tptr:0x%x\t%s\n", item.Time, item.Size, item.Ptr, freeFlag)
