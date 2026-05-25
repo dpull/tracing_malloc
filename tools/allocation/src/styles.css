@@ -1,0 +1,494 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 13px;
+  color: #222;
+  user-select: none;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f4f5f7;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+}
+
+.toolbar button {
+  padding: 6px 14px;
+  border: 1px solid #aaa;
+  border-radius: 3px;
+  background: #f7f7f7;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.toolbar button:hover {
+  background: #e9eef5;
+}
+
+.toolbar-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #444;
+}
+
+.toolbar-field input[type='number'] {
+  width: 60px;
+  padding: 4px 6px;
+  border: 1px solid #aaa;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.view-switch {
+  display: inline-flex;
+  border: 1px solid #aaa;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.view-switch button {
+  border: none;
+  border-left: 1px solid #aaa;
+  padding: 6px 14px;
+  background: #f7f7f7;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.view-switch button:first-child {
+  border-left: none;
+}
+
+.view-switch button.active {
+  background: #4a76b8;
+  color: #fff;
+}
+
+.view-switch button:hover:not(.active) {
+  background: #e9eef5;
+}
+
+#file-info {
+  color: #555;
+  font-size: 12px;
+  word-break: break-all;
+  user-select: text;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chart-area {
+  flex: 1 1 35%;
+  min-height: 200px;
+  padding: 8px 12px;
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+  position: relative;
+}
+
+.chart-area canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.bottom-area {
+  display: flex;
+  flex: 1 1 65%;
+  min-height: 250px;
+}
+
+.frame-list-area,
+.detail-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 240px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.detail-area {
+  border-left: 1px solid #ddd;
+}
+
+.splitter {
+  width: 1px;
+  background: #ddd;
+}
+
+.panel-header {
+  padding: 6px 10px;
+  background: #eef1f5;
+  border-bottom: 1px solid #ddd;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-header .muted {
+  color: #888;
+  font-weight: normal;
+  font-size: 12px;
+}
+
+.detail-header button {
+  padding: 2px 10px;
+  border: 1px solid #aaa;
+  border-radius: 3px;
+  background: #f7f7f7;
+  cursor: pointer;
+}
+
+.detail-header button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.detail-header #detail-summary {
+  flex: 1;
+  text-align: center;
+  font-weight: normal;
+  user-select: text;
+}
+
+.table-wrapper {
+  flex: 1;
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f3f5f8;
+}
+
+th,
+td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+  vertical-align: top;
+  font-weight: normal;
+}
+
+th {
+  font-weight: 600;
+  border-bottom: 1px solid #ccc;
+}
+
+tbody tr {
+  cursor: pointer;
+}
+
+tbody tr:hover {
+  background: #f8f9fb;
+}
+
+tbody tr.selected {
+  background: #d6e4f5;
+}
+
+.col-fn {
+  width: 50%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-mod,
+.col-file {
+  width: 30%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-size {
+  width: 20%;
+  white-space: nowrap;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#detail-stack .col-fn {
+  width: 45%;
+}
+
+#detail-stack .col-file {
+  width: 35%;
+}
+
+#detail-stack .col-mod {
+  width: 20%;
+}
+
+td {
+  user-select: text;
+}
+
+#status-bar {
+  padding: 4px 10px;
+  background: #e7e9ec;
+  border-top: 1px solid #ccc;
+  font-size: 12px;
+  color: #333;
+  user-select: text;
+}
+
+/* ---------- Module column visibility (default: hidden) ---------- */
+
+.col-mod {
+  display: none;
+}
+
+body.show-module .col-mod {
+  display: table-cell;
+}
+
+body:not(.show-module):not(.compare-mode) #frame-list .col-fn {
+  width: 75%;
+}
+body:not(.show-module):not(.compare-mode) #frame-list .col-size {
+  width: 25%;
+}
+body:not(.show-module) #detail-stack .col-fn {
+  width: 60%;
+}
+body:not(.show-module) #detail-stack .col-file {
+  width: 40%;
+}
+
+/* ---------- Compare-only controls ---------- */
+
+.compare-only {
+  display: none;
+}
+
+body.compare-mode .compare-only {
+  display: inline-flex;
+}
+
+body.compare-mode #file-info {
+  display: none;
+}
+
+.file-info-group {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: #555;
+  word-break: break-all;
+  user-select: text;
+}
+
+#file-info-b {
+  font-size: 12px;
+  color: #555;
+}
+
+/* ---------- Compare-mode layout ----------
+ * Three panels in the bottom area: File A list | File B list | Detail.
+ * No chart on top. Each list has its own (independently sortable) Size column.
+ */
+
+body.compare-mode .chart-area {
+  display: none;
+}
+
+/* Force-hide Module column in compare mode regardless of show-module. */
+body.compare-mode .col-mod {
+  display: none;
+}
+
+/* Show only the appropriate frame-list panel(s) per view mode. */
+.compare-list-area {
+  display: none;
+}
+body.compare-mode .single-only {
+  display: none;
+}
+body.compare-mode .compare-list-area {
+  display: flex;
+}
+
+/* Visual separator between the two compare lists */
+body.compare-mode #frame-list-area-b {
+  border-left: 1px solid #ddd;
+}
+
+/* Per-slot list column widths */
+#frame-list-a .col-fn,
+#frame-list-b .col-fn {
+  width: 65%;
+}
+#frame-list-a .col-size,
+#frame-list-b .col-size {
+  width: 35%;
+}
+
+/* Sortable column header */
+.col-sortable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+.col-sortable:hover {
+  background: #e3e8ef;
+}
+.col-sortable::after {
+  content: '\2003';
+  font-size: 10px;
+  color: #888;
+  margin-left: 4px;
+}
+.col-sortable.sort-desc::after {
+  content: ' \25BC';
+  color: #4a76b8;
+}
+.col-sortable.sort-asc::after {
+  content: ' \25B2';
+  color: #4a76b8;
+}
+
+/* ---------- Settings modal ---------- */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.modal-content {
+  position: relative;
+  width: 360px;
+  max-width: 90vw;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f3f5f8;
+  border-bottom: 1px solid #ddd;
+  font-weight: 600;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: #666;
+  padding: 0 4px;
+}
+
+.modal-close:hover {
+  color: #222;
+}
+
+.modal-body {
+  padding: 14px 16px;
+}
+
+.settings-group-title {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+  font-weight: 600;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.setting-row code {
+  background: #f0f2f5;
+  padding: 0 4px;
+  border-radius: 2px;
+  font-size: 12px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid #eee;
+  background: #fafbfc;
+}
+
+.modal-footer button,
+#btn-settings {
+  padding: 6px 14px;
+  border: 1px solid #aaa;
+  border-radius: 3px;
+  background: #f7f7f7;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.modal-footer button:hover,
+#btn-settings:hover {
+  background: #e9eef5;
+}

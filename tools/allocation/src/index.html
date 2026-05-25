@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+    />
+    <title>tracing malloc</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="toolbar">
+      <button id="btn-open" type="button">Open File</button>
+      <button id="btn-open-b" type="button" class="compare-only">Open File B</button>
+      <div class="view-switch" role="tablist" aria-label="View mode">
+        <button id="view-timeline" type="button" class="active" data-view="timeline">
+          Timeline
+        </button>
+        <button id="view-overall" type="button" data-view="overall">
+          Overall
+        </button>
+        <button id="view-compare" type="button" data-view="compare">
+          Compare
+        </button>
+      </div>
+      <label class="toolbar-field" title="Skip this many top stack frames before picking the key frame.">
+        Ignore top frames:
+        <input
+          id="ignore-count"
+          type="number"
+          min="0"
+          step="1"
+          value="0"
+        />
+      </label>
+      <button id="btn-settings" type="button" title="Settings">Settings</button>
+      <span class="file-info-group">
+        <span id="file-info" title="No file loaded">No file loaded</span>
+        <span id="file-info-b" class="compare-only" title="No file B loaded">
+          No file B loaded
+        </span>
+      </span>
+    </header>
+
+    <main class="main">
+      <section class="chart-area">
+        <canvas id="alloc-chart"></canvas>
+      </section>
+
+      <section class="bottom-area">
+        <div class="frame-list-area single-only" id="frame-list-area">
+          <div class="panel-header">
+            <span>Allocations by key frame</span>
+            <span id="frame-count" class="muted"></span>
+          </div>
+          <div class="table-wrapper">
+            <table id="frame-list">
+              <thead>
+                <tr>
+                  <th class="col-fn">Function</th>
+                  <th class="col-mod">Module</th>
+                  <th class="col-size">Size</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="frame-list-area compare-list-area" id="frame-list-area-a">
+          <div class="panel-header">
+            <span>File A</span>
+            <span id="frame-count-a" class="muted"></span>
+          </div>
+          <div class="table-wrapper">
+            <table id="frame-list-a">
+              <thead>
+                <tr>
+                  <th class="col-fn">Function</th>
+                  <th
+                    class="col-size col-sortable sort-desc"
+                    data-slot="a"
+                    data-sort-key="size"
+                  >Size</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="frame-list-area compare-list-area" id="frame-list-area-b">
+          <div class="panel-header">
+            <span>File B</span>
+            <span id="frame-count-b" class="muted"></span>
+          </div>
+          <div class="table-wrapper">
+            <table id="frame-list-b">
+              <thead>
+                <tr>
+                  <th class="col-fn">Function</th>
+                  <th
+                    class="col-size col-sortable sort-desc"
+                    data-slot="b"
+                    data-sort-key="size"
+                  >Size</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="splitter"></div>
+
+        <div class="detail-area">
+          <div class="panel-header detail-header">
+            <button id="btn-prev" type="button" disabled>&lt;&lt;</button>
+            <span id="detail-summary">No detail</span>
+            <button id="btn-next" type="button" disabled>&gt;&gt;</button>
+          </div>
+          <div class="table-wrapper">
+            <table id="detail-stack">
+              <thead>
+                <tr>
+                  <th class="col-fn">Function</th>
+                  <th class="col-file">File</th>
+                  <th class="col-mod">Module</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer id="status-bar">…</footer>
+
+    <div id="settings-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="modal-backdrop" data-close-modal></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <span id="settings-title">Settings</span>
+          <button
+            id="settings-close"
+            class="modal-close"
+            type="button"
+            aria-label="Close"
+            data-close-modal
+          >&times;</button>
+        </div>
+        <div class="modal-body">
+          <h4 class="settings-group-title">Columns</h4>
+          <label class="setting-row">
+            <input type="checkbox" id="setting-show-module" />
+            <span>Show <code>Module</code> column</span>
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button id="settings-ok" type="button" data-close-modal>OK</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../node_modules/chart.js/dist/chart.umd.js"></script>
+    <script src="./renderer.js"></script>
+  </body>
+</html>

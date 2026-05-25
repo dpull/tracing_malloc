@@ -1,0 +1,16 @@
+{
+  "name": "allocation-electron",
+  "version": "0.1.0",
+  "description": "Electron-based viewer for tracing_malloc allocation traces (single file mode).",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.0.0"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.0"
+  }
+}
